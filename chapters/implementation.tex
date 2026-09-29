@@ -1,0 +1,254 @@
+\chapter{Implementation of the Margin}
+\label{chap:implementation}
+
+% TODO: Describe how \cref{chap:margin} was turned into working
+% code. Suggested structure:
+%  - Software stack / tools (language, libraries, snake robot
+%    simulator, solvers used for the wrench-space computation).
+%  - Algorithm(s): pseudocode for computing the margin from a
+%    given set of contacts (use the algorithm/algpseudocode
+%    environment below).
+%  - Numerical considerations: tolerances, degenerate contact
+%    configurations, computational cost / complexity in practice.
+%  - Validation of the implementation against known/simple cases
+%    before using it in simulation (e.g. hand-computable examples).
+%  - Integration into the path planner, if implemented.
+
+\section{Software and Tools}
+
+\section{Algorithm}
+
+To evaluate the force-closure quality of a given contact configuration, the
+linear program (LP2) from the Handbook of Robotics, Chapter 28.4.2, is
+employed. The optimization determines a force-closure margin $d$ by finding
+a feasible contact-force distribution that maximizes the minimum margin to
+the boundaries of the contact constraints.
+
+Let the stacked vector of contact-force intensities be defined as
+\begin{equation}
+    \boldsymbol{\lambda}
+    =
+    \begin{bmatrix}
+        f_{n1} & f_{t1} &
+        f_{n2} & f_{t2} &
+        \cdots &
+        f_{n n_c} & f_{t n_c}
+    \end{bmatrix}^{T},
+\end{equation}
+where $f_{ni}$ and $f_{ti}$ denote the normal and tangential force
+components at contact $i$, respectively. The grasp matrix $G$ maps these
+contact-force intensities to the resultant wrench acting on the object.
+
+The force-closure margin is obtained by solving
+\begin{equation}
+\begin{aligned}
+    \underset{\boldsymbol{\lambda},d}{\operatorname{maximize}}
+    \quad & d \\[2mm]
+    \text{subject to}
+    \quad & G\boldsymbol{\lambda} = \boldsymbol{0},\\
+    & F\boldsymbol{\lambda} - \boldsymbol{1}d \geq \boldsymbol{0},\\
+    & d \geq 0,\\
+    & \boldsymbol{e}^{T}\boldsymbol{\lambda} \leq n_c.
+\end{aligned}
+\label{eq:force_closure_lp}
+\end{equation}
+
+Here, $F$ represents the matrix describing the linearized contact
+constraints, while $\boldsymbol{1}$ is a vector of ones with the same
+number of rows as $F$. The equilibrium constraint
+$G\boldsymbol{\lambda}=\boldsymbol{0}$ ensures that the contact forces
+produce zero resultant wrench. Consequently, the solution represents an
+internal force distribution that is in equilibrium.
+
+The inequality
+\begin{equation}
+    F\boldsymbol{\lambda} - \boldsymbol{1}d
+    \geq \boldsymbol{0}
+\end{equation}
+can equivalently be written component-wise as
+\begin{equation}
+    d \leq (F\boldsymbol{\lambda})_i,
+    \qquad
+    i=1,\ldots,m,
+\end{equation}
+where $m$ is the number of rows of $F$. Thus, $d$ is a lower bound on all
+contact-constraint margins. Maximizing $d$ therefore maximizes the minimum
+margin over all constraints.
+
+A normalization constraint is required because the equilibrium and contact
+constraints are homogeneous in $\boldsymbol{\lambda}$. Without such a
+constraint, any feasible force distribution could be multiplied by an
+arbitrary positive scalar, causing $d$ to increase without bound. The
+normalization
+\begin{equation}
+    \boldsymbol{e}^{T}\boldsymbol{\lambda} \leq n_c
+\end{equation}
+fixes the scale of the force distribution. For the ordering
+\[
+    \boldsymbol{\lambda}
+    =
+    [f_{n1},f_{t1},f_{n2},f_{t2},\ldots]^T,
+\]
+the vector $\boldsymbol{e}$ is constructed such that
+\begin{equation}
+    \boldsymbol{e}^{T}\boldsymbol{\lambda}
+    =
+    \sum_{i=1}^{n_c} f_{ni}.
+\end{equation}
+
+\subsubsection{Conversion to Standard LP Form}
+
+The optimization is implemented using a linear-programming solver in the
+standard form
+\begin{equation}
+\begin{aligned}
+    \underset{\boldsymbol{x}}{\operatorname{minimize}}
+    \quad & \boldsymbol{c}^{T}\boldsymbol{x}\\
+    \text{subject to}
+    \quad & A_{\mathrm{ub}}\boldsymbol{x}
+        \leq \boldsymbol{b}_{\mathrm{ub}},\\
+    & A_{\mathrm{eq}}\boldsymbol{x}
+        = \boldsymbol{b}_{\mathrm{eq}},
+\end{aligned}
+\end{equation}
+with appropriate variable bounds.
+
+Since the optimization variable contains both the force intensities and the
+force-closure margin, it is defined as
+\begin{equation}
+    \boldsymbol{x}
+    =
+    \begin{bmatrix}
+        \boldsymbol{\lambda}\\
+        d
+    \end{bmatrix}.
+\end{equation}
+
+Most linear-programming solvers, including the solver used in this work,
+formulate the objective as a minimization. Therefore, maximizing $d$ is
+implemented by minimizing $-d$. The objective vector is consequently
+\begin{equation}
+    \boldsymbol{c}
+    =
+    \begin{bmatrix}
+        \boldsymbol{0}\\
+        -1
+    \end{bmatrix},
+\end{equation}
+such that
+\begin{equation}
+    \boldsymbol{c}^{T}\boldsymbol{x}=-d.
+\end{equation}
+
+The equilibrium constraint is written as
+\begin{equation}
+    A_{\mathrm{eq}}
+    =
+    \begin{bmatrix}
+        G & \boldsymbol{0}
+    \end{bmatrix},
+    \qquad
+    \boldsymbol{b}_{\mathrm{eq}}
+    =
+    \boldsymbol{0}.
+\end{equation}
+
+The constraint
+\begin{equation}
+    F\boldsymbol{\lambda}
+    -\boldsymbol{1}d
+    \geq \boldsymbol{0}
+\end{equation}
+must be converted to the solver's required ``less-than-or-equal-to''
+form. Multiplication by $-1$ gives
+\begin{equation}
+    -F\boldsymbol{\lambda}
+    +\boldsymbol{1}d
+    \leq \boldsymbol{0}.
+\end{equation}
+Consequently, the corresponding inequality matrix is
+\begin{equation}
+    A_{\mathrm{ub}}
+    =
+    \begin{bmatrix}
+        -F & \boldsymbol{1}\\
+        \boldsymbol{e}^{T} & 0
+    \end{bmatrix},
+\end{equation}
+with
+\begin{equation}
+    \boldsymbol{b}_{\mathrm{ub}}
+    =
+    \begin{bmatrix}
+        \boldsymbol{0}\\
+        n_c
+    \end{bmatrix}.
+\end{equation}
+
+The optimization variables are subject to the bounds
+\begin{equation}
+    -\infty < \lambda_i < \infty,
+    \qquad
+    d\geq0.
+\end{equation}
+
+The resulting LP is therefore
+\begin{equation}
+\boxed{
+\begin{aligned}
+    \underset{\boldsymbol{x}}{\operatorname{minimize}}
+    \quad&
+    \begin{bmatrix}
+        \boldsymbol{0}^{T} & -1
+    \end{bmatrix}
+    \boldsymbol{x}\\
+    \text{subject to}
+    \quad&
+    \begin{bmatrix}
+        -F & \boldsymbol{1}\\
+        \boldsymbol{e}^{T} & 0
+    \end{bmatrix}
+    \boldsymbol{x}
+    \leq
+    \begin{bmatrix}
+        \boldsymbol{0}\\
+        n_c
+    \end{bmatrix},\\
+    &
+    \begin{bmatrix}
+        G & \boldsymbol{0}
+    \end{bmatrix}
+    \boldsymbol{x}
+    =
+    \boldsymbol{0},\\
+    &d\geq0.
+\end{aligned}
+}
+\end{equation}
+
+The optimal value of the original maximization problem is recovered from
+the LP solver by changing the sign of the objective value,
+\begin{equation}
+    d^{*}=-\boldsymbol{c}^{T}\boldsymbol{x}^{*}.
+\end{equation}
+A positive value of $d^{*}$ indicates that a contact-force distribution
+satisfying the equilibrium and contact constraints exists with a positive
+margin. The magnitude of $d^{*}$ consequently provides a measure of the
+force-closure margin for the given contact configuration.
+
+\begin{algorithm}[H]
+\caption{Force closure margin computation (placeholder)}
+\begin{algorithmic}[1]
+\Require Contact points $\{p_i\}$, contact normals $\{n_i\}$, friction coefficients $\{\mu_i\}$
+\Ensure Force closure margin $m$
+\State Build wrench cone for each contact $i$
+\State Assemble total wrench space $W$
+\State Compute margin $m \gets$ \Call{ComputeMargin}{$W$}
+\State \Return $m$
+\end{algorithmic}
+\end{algorithm}
+
+\section{Numerical Considerations}
+
+\section{Verification of the Implementation}
+

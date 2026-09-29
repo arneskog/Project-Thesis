@@ -1,0 +1,173 @@
+\chapter{Theory}
+\label{chap:theory}
+
+% TODO: Lay the mathematical/mechanical groundwork the rest of the
+% report builds on. Suggested structure:
+%  - Kinematics/dynamics model of the snake robot relevant to
+%    contact forces (link model, contact points, friction model
+%    e.g. Coulomb friction cones).
+%  - Contact wrench space, wrench space formulation for a set of
+%    contacts between the robot and an object/obstacle.
+%  - Formal definition of force closure (and form closure) for a
+%    set of contacts, and the standard convex-hull/wrench-space
+%    tests for it.
+%  - Any coordinate frames, notation, and conventions used
+%    consistently for the rest of the report -- define them here
+%    once so later chapters can just reference \cref{chap:theory}.
+
+\section{Notation and Conventions}
+
+\section{Contact and Friction Model}
+
+A hard-finger (HF) model is used when there is significant contact friction, but the contact patch is small, so that no appreciable friction moment exists. When this model is applied to a contact, all three translational velocity components of the contact point on the hand (i. e., the first three components of vi,hnd) and all three components of the contact force are transmitted through the
+contact. None of the angular velocity components or moment components are transmitted. \textcolor{red}{Claude: For a snake robot pressing a body segment against an obstacle, HF is the used default (point/line contact, neglible tourqe about the surface model)}
+\newline
+\newline
+The soft-finger (SF) model is used in situations in
+which the surface friction and the contact patch are large
+enough to generate significant friction forces and a friction moment about the contact normal. At a contact
+where this model is enforced, the three translational
+velocity components of the contact on the hand and
+the angular velocity component about the contact normal are transmitted (i. e., the first four components of
+vi,hnd). Similarly, all three components of contact force and the normal component of the contact moment are
+transmitted. \textbf{[Handbook of robotics, p 675]}
+\newline
+\newline
+In planar cases, the SF and HF models are equivalent, because the object and the hand lie in a plane.
+Rotations about the contact normals would cause outof-plane motions. \textbf{[Handbook of robotics, p 676]}
+\newline
+\newline
+Wrench intensities $\lambda$ in N (G) are referred to asinternal object forces. These wrenches are internal because
+they do not contribute to the acceleration of the object, i. e., G$\lambda$ = 0. Instead, these wrench intensities affect the tightness of the grasp. Thus, internal wrench intensities
+play a fundamental role in maintaining grasps that rely
+on friction. \textbf{[Handbook of robotics, p 678]}
+
+\section{Coulomb Friction Cone}
+The Coulomb friction cone is defined as in \cite{prattichizzo2008grasping}. At a contact point $i$, the contact force is decomposed into a normal component $f_{in}$ (pressing into the surface) and two tangential (friction) components $f_{it}, f_{io}$ lying in the contact plane. Coulomb's friction law states that the tangential force cannot exceed the normal force scaled by the friction coefficient $\mu_i$, without the contact slipping:
+\begin{equation}
+    \mathcal{F}_i = \left\{ (f_{in}, f_{it}, f_{io}) \;\middle|\; \sqrt{f_{it}^2 + f_{io}^2} \le \mu_i f_{in} \right\}.
+    \label{eq:friction-cone-explicit}
+\end{equation}
+The set $\mathcal{F}_i$ contains all admissible (non-slipping) contact forces at point $i$. Plotted with $f_{in}$ as one axis and $(f_{it}, f_{io})$ as the other two, this set forms a \emph{cone}: the allowed friction magnitude grows linearly with the normal force.
+
+More generally, when all $\ell_i$ force components at contact $i$ are stacked into a vector $\boldsymbol{\lambda}_i \in \mathbb{R}^{\ell_i}$, the friction cone is written compactly using a (possibly weighted) norm $\|\cdot\|_w$:
+\begin{equation}
+    \mathcal{F}_i = \left\{ \boldsymbol{\lambda}_i \in \mathbb{R}^{\ell_i} \;\middle|\; \|\boldsymbol{\lambda}_i\|_w \le \mu_i f_{in} \right\}.
+    \label{eq:friction-cone-general}
+\end{equation}
+
+Where $\|\boldsymbol{\lambda}_i\|_w$ detonates a weighted quadratic norm, and Table \ref{tab:norms-contact-models} defines useful norms for the different contact models. 
+\begin{table}[htbp]
+    \centering
+    \caption{Norms for the three main contact models}
+    \label{tab:norms-contact-models}
+    \begin{tabular}{ll}
+        \toprule
+        Model & $\|\boldsymbol{\lambda}_i\|_w$ \\
+        \midrule
+        PwoF & $0$ \\[4pt]
+        HF   & $\dfrac{1}{\mu_i}\sqrt{f_{it}^2 + f_{io}^2}$ \\[10pt]
+        SF   & $\dfrac{1}{\mu_i}\sqrt{f_{it}^2 + f_{io}^2 + a v_i^{-1} \lvert m_{in} \rvert^2}$ \\
+        \bottomrule
+    \end{tabular}
+\end{table}
+
+\textbf{Interpretation:} $\mathcal{F}_i$ is the set of physically admissible contact forces that keep contact $i$ from slipping. A required contact force lying \emph{inside} the cone means the contact holds; one falling outside means the surfaces slip. Force closure requires a set of contacts whose friction cones, in combination, can resist any external disturbance force/wrench. \textbf{[Handbook of robotics, p 685]}
+
+\section{Nullspace cases for G and J}
+From handbook of robotics:
+\textbf{Graspable, indeterminate, defective, redundant, hyperstatic}.
+"Because the snake's base is unactuated and unsupported, its Jacobian contains G as the base block, and the hand-grasp distinction between defective and hyperstatic grasps collapses: a contact force that loads no joint and no base coordinate is necessarily internal."
+
+
+\section{Force Closure: Formal Definition}
+Claude: Most sources use "force closure" for a contact-only property, which is exactly the Handbook's frictional form closure (Def. 28.9). Only a smaller group, including the Handbook's own Def. 28.10, makes force closure depend on the robot's actuators. The Handbook itself says Def. 28.9 is what Murray et al. call force closure.
+
+Def. 28.9 requires rank G = $n_v$ and a squeeze $\lambda \in Int(F)$ with G $\lambda = 0$ (contacts and friction only). Def. 28.10 adds N(G) N($J^T$) = 0, meaning the hand's joints can control every squeeze.
+\subsection{Frictional Form Closure}
+\subsection{Force Closure}
+\section{Force Closure Tests}
+
+\textbf{[Handbook of robotics, p 686]} The Friction cone is a smooth, curved surface. Where the friction constraint \eqref{eq:friction-cone-explicit} is quadratic and requires nonlinear programming techniques to solve. However is it possible to work with approximate tests. 
+
+One approach is to replace it with polyhedral (pyramidal) cone, defined as the nonnegative span of a finite set of generator vectors. This way it is possible to solve it with linear programming techniques. This will later in the report be used for checking whether a candidate contact configuration for the snake robot satisfies force closure.
+
+\subsection{Generators of a Polyhedral Cone}
+
+Any polyhedral cone can be represented as the set of all nonnegative linear combinations of a finite number $n_g$ of generator vectors $\mathbf{s}_{i1}, \dots, \mathbf{s}_{i n_g}$. A force $\mathbf{f}$ lying inside the approximate cone at contact $i$ we can write explicitly as: 
+\begin{equation}
+    \mathbf{f} = \sum_{k=1}^{n_g} \sigma_k \, \mathbf{s}_{ik}, \qquad \sigma_k \ge 0 ,
+    \label{eq:generator-combination}
+\end{equation}
+where each $\sigma_k$ is a nonnegative generator weight. Geometrically, the $n_g$ generators are the edges of a pyramid inscribed in (or circumscribing) the true circular friction cone; increasing $n_g$ improves the approximation.
+
+Equation~\eqref{eq:generator-combination} can be written compactly for the full set of contact forces $\boldsymbol{\lambda}_i$ transmitted at contact $i$ as
+\begin{equation}
+    G_i \boldsymbol{\lambda}_i = S_i \boldsymbol{\sigma}_i, \qquad \boldsymbol{\sigma}_i \ge 0 ,
+    \label{eq:generator-matrix-form}
+\end{equation}
+where $S_i = (\mathbf{s}_{i1} \; \cdots \; \mathbf{s}_{i n_g})$ collects the generators as columns, and $\boldsymbol{\sigma}_i \ge 0$ is a vector of nonnegative weights. For a frictionless point contact (PwoF), $n_g = 1$ and $S_i$ reduces to the single contact normal direction.
+
+\subsection{Generators for the Hard-Finger (HF) Model}
+
+For a Hard Finger contact, the friction cone is approximated by the nonnegative span of $n_g$ uniformly spaced contact-force generators, giving an inscribed regular polyhedral cone (Fig.~\ref{fig:polyhedral-cone}). The generator matrix is
+\begin{equation}
+    S_i =
+    \begin{pmatrix}
+        \cdots & 1 & \cdots \\
+        \cdots & \mu_i \cos\!\left(\dfrac{2k\pi}{n_g}\right) & \cdots \\
+        \cdots & \mu_i \sin\!\left(\dfrac{2k\pi}{n_g}\right) & \cdots
+    \end{pmatrix}, \qquad k = 1, \dots, n_g .
+    \label{eq:Si-HF}
+\end{equation}
+The top row fixes a unit normal component for every generator, while the remaining two rows place the $n_g$ generators evenly around a circle of radius $\mu_i$ in the tangential $(f_{it}, f_{io})$-plane. If a \emph{circumscribing} polyhedral cone is preferred instead of an inscribed one, $\mu_i$ in \eqref{eq:Si-HF} is simply replaced by $\mu_i / \cos(\pi/n_g)$.
+
+\begin{figure}[htbp]
+    \centering
+    % Replace with your own figure/drawing of the linearized (polyhedral) friction cone,
+    % analogous to Fig. 28.10 in the Springer Handbook of Robotics.
+    \includegraphics[width=0.55\linewidth]{Figurer/ntnulogo.pdf}
+    \caption{Quadratic (Coulomb) friction cone approximated as a polyhedral cone with seven generators.}
+    \label{fig:polyhedral-cone}
+\end{figure}
+
+\subsection{Generators for the Soft-Finger (SF) Model}
+
+For a Soft Finger contact, the torsional friction component is decoupled from the tangential components, so each generator is extended to four dimensions:
+\begin{equation}
+    \mathbf{s}_{ik} = \begin{pmatrix} 1 & 0 & 0 & \pm b \upsilon_i \end{pmatrix}^\top ,
+\end{equation}
+where $b$ is a characteristic length used to keep units consistent between force and torsional-moment components. Collecting these generators gives
+\begin{equation}
+    S_i =
+    \begin{pmatrix}
+        \cdots & 1 & \cdots & 1 & 1 \\
+        \cdots & \mu_i \cos(2k\pi/n_g) & \cdots & 0 & 0 \\
+        \cdots & \mu_i \sin(2k\pi/n_g) & \cdots & 0 & 0 \\
+        \cdots & 0 & \cdots & b\upsilon_i & -b\upsilon_i
+    \end{pmatrix}.
+    \label{eq:Si-SF}
+\end{equation}
+
+\subsection{Assembling the Full Grasp}
+
+The set of all contact wrenches that the hand can apply without violating the friction law at any contact is written as
+\begin{equation}
+    G \boldsymbol{\lambda} = S \boldsymbol{\sigma}, \qquad \boldsymbol{\sigma} \ge 0 ,
+\end{equation}
+where $S = (S_1, \dots, S_{n_c})$ stacks the per-contact generator matrices and $\boldsymbol{\sigma} = (\boldsymbol{\sigma}_1^\top, \dots, \boldsymbol{\sigma}_{n_c}^\top)^\top$ collects all generator weights, with $n_c$ the number of contacts.
+
+\subsection{Dual (Face-Normal) Form}
+
+It is often convenient to reformulate the friction constraint in dual form, using the \emph{face normals} of the polyhedral cone rather than its generators:
+\begin{equation}
+    F_i \boldsymbol{\lambda}_i \ge 0 ,
+    \label{eq:face-normal-form}
+\end{equation}
+where each row of $F_i$ is normal to a face formed by two adjacent generators of the approximate cone. For an HF contact, row $i$ of $F_i$ can be computed directly as the cross product of consecutive generators, $\mathbf{s}_{ik} \times \mathbf{s}_{i,k+1}$. For an SF contact the generators are four-dimensional, so simple cross products no longer suffice, and a general generator-to-face-normal conversion method must be used instead.
+
+Combining the per-contact constraints \eqref{eq:face-normal-form} over all $n_c$ contacts gives the compact form
+\begin{equation}
+    F \boldsymbol{\lambda} \ge 0 , \qquad F = \operatorname{Blockdiag}(F_1, \dots, F_{n_c}) .
+    \label{eq:face-normal-full}
+\end{equation}

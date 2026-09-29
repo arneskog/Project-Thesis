@@ -1,0 +1,127 @@
+\chapter{A Margin for Force Closure}
+\label{chap:margin}
+
+% TODO: This is the core theoretical contribution chapter.
+% Suggested structure:
+%  - Motivate why a binary force-closure test is insufficient for
+%    path planning (no notion of "how robust" a configuration is).
+%  - Survey candidate margin/quality metrics from the grasping
+%    literature (e.g. largest inscribed ball in the wrench space,
+%    minimum singular value formulations, etc.) and state your
+%    selection criteria (computational cost, differentiability,
+%    physical interpretability, suitability as a planning cost).
+%  - Derive/define your chosen force closure margin precisely:
+%    inputs, formula, units, bounds, degenerate cases.
+%  - Prove or argue its key properties (continuity, monotonicity
+%    with respect to contact quality, behaviour at the force
+%    closure boundary, computational complexity).
+%  - Discuss how the margin will be consumed by a path planner
+%    (e.g. as a cost term, as a constraint, as a heuristic).
+
+\section{Requirements for a Path-Planning-Ready Metric}
+
+\section{Candidate Metrics}
+Potential: \textbf{[The-Synthesis-of-Stable-Force-Closure-Grasps]}
+
+\textbf{[Handbook-of-Robotics]} Example 3 shows hyperstatical graps, is that relevant for the snake case as well? So LP2 valid, but not LP3. Need the snake JAcobian, so joint and angle configurations to calculate LP3. 
+
+\section{Definition of the Force Closure Margin}
+\subsection{Wrench Space and Force Closure}
+\label{sec:wrench-space}
+
+Consider a planar contact configuration between the snake robot's body and
+$n_c$ obstacle contact points $\mathbf{p}_i \in \mathbb{R}^2$, $i = 1,
+\dots, n_c$, with unit outward normals $\mathbf{n}_i$ and tangents
+$\mathbf{t}_i = \mathbf{n}_i^{\perp}$. Each contact is modeled as a
+point contact with Coulomb friction of coefficient $\mu$, transmitting a
+planar force
+\begin{equation}
+\mathbf{f}_i = f_{n,i}\,\mathbf{n}_i + f_{t,i}\,\mathbf{t}_i,
+\qquad f_{n,i} \ge 0,\ \ |f_{t,i}| \le \mu f_{n,i},
+\label{eq:friction-cone}
+\end{equation}
+but no moment about the contact point (hard-finger contact model).
+
+Every admissible contact force induces a wrench $(f_x, f_y, \tau)$ on the
+robot body about a reference point $P_0$ (e.g.\ the body's center of mass),
+with $\tau = (\mathbf{p}_i - P_0) \times \mathbf{f}_i$. Collecting the
+normal- and tangential-force contributions of all contacts into the
+\emph{grasp matrix} $G \in \mathbb{R}^{3 \times 2n_c}$
+(Sec.~\ref{sec:grasp-matrix}) gives the linear map from contact force
+coefficients $\mathbf{c} = [f_{n,1}, f_{t,1}, \dots, f_{n,n_c},
+f_{t,n_c}]^\top$ to the resulting body wrench:
+\begin{equation}
+\mathbf{w} = G\,\mathbf{c}, \qquad \mathbf{w} = (f_x, f_y, \tau) \in \mathbb{R}^3.
+\label{eq:wrench-map}
+\end{equation}
+
+Each column of $G$ is therefore a \emph{primitive wrench} — the wrench
+produced by a unit force along one basis direction (normal or tangential)
+at one contact. The set of all wrenches the contact configuration can
+actually produce, once the friction cone constraints~\eqref{eq:friction-cone}
+are imposed on $\mathbf{c}$, is the \emph{wrench space} (or wrench cone)
+of the grasp:
+\begin{equation}
+\mathcal{W} = \left\{\, G\mathbf{c} \ \middle|\ \mathbf{c} \text{ satisfies}~\eqref{eq:friction-cone} \text{ for all } i \,\right\} \subset \mathbb{R}^3.
+\label{eq:wrench-space}
+\end{equation}
+Because the friction-cone constraints are conic (positively homogeneous),
+$\mathcal{W}$ is a convex cone spanned by the primitive wrenches, obtained
+as the Minkowski sum of the (linearized) friction cones mapped through $G$.
+
+\subsection{LP2}
+\label{sec:force-closure-margin}
+
+Following the frictional form-closure test of
+Bicchi~et~al. cite{bicchi2008grasping} (Springer Handbook of Robotics,
+Sec.~38.4.2), the friction cone~\eqref{eq:friction-cone} at each contact
+is linearized into a set of half-space constraints $F\mathbf{c} \le
+\mathbf{0}$, where $F$ collects the facet normals of every contact's
+linearized friction cone. Force closure — i.e.\ $\mathbf{0} \in
+\operatorname{int}(\mathcal{W})$ — is then tested constructively by
+searching for a nonzero $\mathbf{c}$ that produces zero net wrench while
+sitting strictly inside every friction cone, via the linear program
+
+\begin{equation}
+\begin{aligned}
+\underset{\mathbf{c},\, d}{\text{maximize}} \quad & d \\
+\text{subject to} \quad & G\mathbf{c} = \mathbf{0}, \\
+& F\mathbf{c} \le -\mathbf{1}\, d, \\
+& d \ge 0, \\
+& \mathbf{e}^\top \mathbf{c} \le n_c,
+\end{aligned}
+\label{eq:lp2}
+\end{equation}
+
+where $\mathbf{1}$ and $\mathbf{e}$ are vectors of ones of appropriate
+dimension, and the normalization constraint $\mathbf{e}^\top \mathbf{c}
+\le n_c$ prevents the trivial unbounded scaling of $\mathbf{c}$.
+
+The optimal value $d^\star$ of~\eqref{eq:lp2} is taken as the
+\emph{force closure margin}:
+
+\begin{equation}
+d^\star
+\begin{cases}
+= 0, & \text{no frictional force closure } (\mathbf{0} \notin \operatorname{int}(\mathcal{W})), \\
+> 0, & \text{frictional force closure holds } (\mathbf{0} \in \operatorname{int}(\mathcal{W})),
+\end{cases}
+\label{eq:fc-margin-interpretation}
+\end{equation}
+
+with larger $d^\star$ indicating that the origin sits further inside the
+wrench space $\mathcal{W}$ — i.e.\ a more robust closure, better able to
+withstand disturbances or produce the propulsive wrench required by the
+locomotion gait. This margin serves as the continuous force-closure
+metric used in the path planner,
+candidate configurations are scored (or filtered) by $d^\star$, computed
+once per contact set by solving the linear program~\eqref{eq:lp2}.
+
+\section{Properties of the snake robot}
+Should follow the defininition in Gravdahl 2025.
+As in [Gravdahl, Nordal] the link width is neglected; for frictionless contacts this is exact, while with friction it slightly changes the moment arms of the tangential contact forces.
+
+\section{Properties of the Margin}
+
+\section{Using the Margin in Path Planning}
+

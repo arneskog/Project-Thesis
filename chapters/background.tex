@@ -1,0 +1,442 @@
+\chapter{Background}
+\label{chap:background}
+
+% TODO: Situate the project in the literature. Suggested structure:
+%  - Snake robot locomotion: standard gaits, obstacle-aided
+%    locomotion, prior NTNU/other work on snake robots.
+%  - Object-aided / environment-aided locomotion specifically.
+%  - Grasping and manipulation literature on force closure and
+%    form closure (classical definitions, e.g. Nguyen, Bicchi,
+%    Murray/Li/Sastry).
+%  - Existing metrics for grasp quality / force closure margins,
+%    and why they do or do not transfer to the snake-robot,
+%    path-planning setting.
+%  - Positioning: what this project adds relative to
+%    \cite{example_gravdahl2025} and \cite{example_nordal2026}
+%    (see \texttt{references.bib} -- replace citation keys with
+%    the correct ones once verified).
+
+\section{Snake Robot Locomotion}
+
+\section{Object-Aided Locomotion}
+
+\section{The Grasp Matrix}
+\label{sec:grasp-matrix}
+
+\subsection{Definition following Gravdahl et al. (2026)}
+\label{sec:grasp-matrix-gravdahl}
+
+Gravdahl et al. \textbf{cite{gravdahl2026formclosure}} interpret a planar snake robot in contact
+with a set of obstacles as a grasp, where the obstacles play the role of the
+``fingers'' and the snake's body is the grasped object. The grasp matrix
+$\boldsymbol{G}$ relates the object twist and the contact-point twists,
+
+\begin{equation}
+    \boldsymbol{\nu}_{\text{contacts}} = \boldsymbol{G}^\top \boldsymbol{\nu}_{\text{object}} ,
+    \label{eq:grasp-matrix-velocity}
+\end{equation}
+
+and, dually, maps the contact forces to the resultant wrench acting on the
+object,
+
+\begin{equation}
+    \boldsymbol{w}_{\text{object}} = \boldsymbol{G}\, \boldsymbol{f}_{\text{contacts}} .
+    \label{eq:grasp-matrix-wrench}
+\end{equation}
+
+For a single contact $i$, the \emph{partial grasp matrix} is
+
+\begin{equation}
+    \tilde{\boldsymbol{G}}_i^\top = \bar{\boldsymbol{R}}_i^\top \boldsymbol{P}_i^\top \in \mathbb{R}^{3 \times 3} ,
+    \label{eq:partial-grasp-matrix}
+\end{equation}
+where
+\begin{equation}
+    \bar{\boldsymbol{R}}_i =
+    \begin{bmatrix}
+        \boldsymbol{R} & \boldsymbol{0} \\
+        \boldsymbol{0} & 1
+    \end{bmatrix} \in \mathbb{R}^{3\times3},
+    \qquad
+    \boldsymbol{P}_i =
+    \begin{bmatrix}
+        \boldsymbol{I}_{2\times2} & \boldsymbol{0} \\
+        \boldsymbol{S}(\boldsymbol{p}_i - \boldsymbol{p}_0) & 1
+    \end{bmatrix} \in \mathbb{R}^{3\times3} ,
+    \label{eq:Rbar-P}
+\end{equation}
+with $\boldsymbol{R}$ the $2\times2$ rotation matrix, $\boldsymbol{I}_{2\times2}$ the $2\times2$
+identity matrix, and $\boldsymbol{S}(\boldsymbol{p}_i - \boldsymbol{p}_0)$ the skew-symmetric
+representation of the displacement between contact point $i$ and a chosen
+reference point $\boldsymbol{p}_0$,
+\begin{equation}
+    \boldsymbol{S}(\boldsymbol{a}) = \begin{bmatrix} -a_y & a_x \end{bmatrix}, \qquad \boldsymbol{a} = (a_x, a_y)^\top .
+    \label{eq:skew-2d}
+\end{equation}
+
+Stacking the partial grasp matrices of all $n_c$ contacts gives the
+\emph{complete} grasp matrix, which is then reduced by the contact model
+matrix $\boldsymbol{H}$:
+\begin{equation}
+    \tilde{\boldsymbol{G}}^\top = \begin{bmatrix} \tilde{\boldsymbol{G}}_1 & \cdots & \tilde{\boldsymbol{G}}_{n_c} \end{bmatrix}^\top \in \mathbb{R}^{3n_c \times 3} ,
+    \qquad
+    \boldsymbol{G}^\top = \boldsymbol{H}\,\tilde{\boldsymbol{G}}^\top .
+    \label{eq:complete-grasp-matrix}
+\end{equation}
+Gravdahl et al.\ restrict their analysis to the point-contact-without-friction
+(PwoF) model, for which $\boldsymbol{H}$ keeps only the normal-force component
+of each contact:
+\begin{equation}
+    \boldsymbol{H}^{\mathrm{PwoF}} =
+    \begin{bmatrix}
+        1 & 0 & 0 & 0 & 0 & 0 & \cdots & 0 & 0 & 0 \\
+        0 & 0 & 0 & 1 & 0 & 0 & \cdots & 0 & 0 & 0 \\
+        \vdots & & & & & & \ddots & & & \vdots \\
+        0 & 0 & 0 & 0 & 0 & 0 & \cdots & 1 & 0 & 0
+    \end{bmatrix} \in \mathbb{R}^{n_c \times 3n_c} ,
+    \label{eq:H-pwof-gravdahl}
+\end{equation}
+so that $\boldsymbol{G} \in \mathbb{R}^{3 \times n_c}$: one column per contact,
+along the contact normal.
+
+\subsection{Generalization: the Handbook of Robotics framework}
+\label{sec:grasp-matrix-handbook}
+
+Equations~\eqref{eq:grasp-matrix-velocity}--\eqref{eq:complete-grasp-matrix} are, in
+fact, a specialization of the general grasp-analysis framework in the \textbf{\emph{Handbook of Robotics}, Ch.~28 cite{prattichizzo2016grasping}}
+(Gravdahl
+et al.\ adopt this nomenclature directly). The Handbook treats $\boldsymbol{H}$
+as a free choice determined by the \emph{contact model}, so that form closure
+(frictionless, PwoF) and force closure (frictional, HF) fall out of the same
+construction — only $\boldsymbol{H}$ changes. This is the natural route from
+Gravdahl et al.'s form-closure analysis to the force-closure margin this
+thesis develops: the geometry ($\tilde{\boldsymbol{G}}_i$, $\bar{\boldsymbol{R}}_i$,
+$\boldsymbol{P}_i$) is untouched; only the contact-model selection matrix
+$\boldsymbol{H}_i$ needs to be replaced.
+
+For a single planar contact, the Handbook (Table~28.3) gives
+\begin{equation}
+    \boldsymbol{H}_i^{\mathrm{PwoF}} = \begin{bmatrix} 1 & 0 & 0 \end{bmatrix} \in \mathbb{R}^{1\times3} , \qquad \ell_i = 1 ,
+    \label{eq:Hi-pwof-planar}
+\end{equation}
+\begin{equation}
+    \boldsymbol{H}_i^{\mathrm{HF}} = \begin{bmatrix} \boldsymbol{I}_{2\times2} & \boldsymbol{0}_{2\times1} \end{bmatrix} \in \mathbb{R}^{2\times3} , \qquad \ell_i = 2 ,
+    \label{eq:Hi-hf-planar}
+\end{equation}
+noting that in the planar case the hard-finger (HF) and soft-finger (SF)
+models coincide, since there is no out-of-plane axis for a torsional moment
+to act about. Equation~\eqref{eq:Hi-pwof-planar} is exactly
+Gravdahl et al.'s single-contact row in~\eqref{eq:H-pwof-gravdahl}.
+
+\paragraph{Adapting to $n_c$ contacts.}
+Stacking~\eqref{eq:Hi-pwof-planar} and~\eqref{eq:Hi-hf-planar} block-diagonally
+over all $n_c$ contacts gives the complete contact model matrix for each
+case:
+\begin{equation}
+    \boldsymbol{H}^{\mathrm{PwoF}} = \mathrm{Blockdiag}\big(\boldsymbol{H}_1^{\mathrm{PwoF}}, \ldots, \boldsymbol{H}_{n_c}^{\mathrm{PwoF}}\big) \in \mathbb{R}^{n_c \times 3n_c} ,
+    \label{eq:H-pwof-nc}
+\end{equation}
+\begin{equation}
+    \boldsymbol{H}^{\mathrm{HF}} = \mathrm{Blockdiag}\big(\boldsymbol{H}_1^{\mathrm{HF}}, \ldots, \boldsymbol{H}_{n_c}^{\mathrm{HF}}\big) \in \mathbb{R}^{2n_c \times 3n_c} ,
+    \label{eq:H-hf-nc}
+\end{equation}
+written out explicitly, the hard-finger case is
+\begin{equation}
+    \boldsymbol{H}^{\mathrm{HF}} =
+    \left[\begin{array}{ccc|ccc|c|ccc}
+        1 & 0 & 0 & 0 & 0 & 0 & \cdots & 0 & 0 & 0 \\
+        0 & 1 & 0 & 0 & 0 & 0 & \cdots & 0 & 0 & 0 \\
+        0 & 0 & 0 & 1 & 0 & 0 & \cdots & 0 & 0 & 0 \\
+        0 & 0 & 0 & 0 & 1 & 0 & \cdots & 0 & 0 & 0 \\
+        \vdots & & & & & & \ddots & & & \vdots \\
+        0 & 0 & 0 & 0 & 0 & 0 & \cdots & 1 & 0 & 0 \\
+        0 & 0 & 0 & 0 & 0 & 0 & \cdots & 0 & 1 & 0
+    \end{array}\right] \in \mathbb{R}^{2n_c \times 3n_c} .
+    \label{eq:H-hf-nc-explicit}
+\end{equation}
+
+Applying $\boldsymbol{H}$ to the complete partial grasp matrix from
+\eqref{eq:complete-grasp-matrix} (unchanged from the Gravdahl derivation)
+gives the final grasp matrix for each contact model:
+\begin{align}
+    \boldsymbol{G}^{\mathrm{PwoF}} &\in \mathbb{R}^{3 \times n_c} , &
+    \boldsymbol{G}^{\mathrm{PwoF}\top} &= \boldsymbol{H}^{\mathrm{PwoF}}\,\tilde{\boldsymbol{G}}^\top ,
+    \label{eq:G-pwof-nc}\\
+    \boldsymbol{G}^{\mathrm{HF}} &\in \mathbb{R}^{3 \times 2n_c} , &
+    \boldsymbol{G}^{\mathrm{HF}\top} &= \boldsymbol{H}^{\mathrm{HF}}\,\tilde{\boldsymbol{G}}^\top .
+    \label{eq:G-hf-nc}
+\end{align}
+
+Under the hard-finger model, each contact contributes \emph{two} columns to
+$\boldsymbol{G}$ instead of one: the normal-force direction (same as PwoF)
+and the tangential (friction) direction. This is what allows the contacts to
+generate wrenches off the contact normals, which is a necessary ingredient
+for force closure, but is absent by construction from
+Gravdahl et al.'s PwoF-only form-closure analysis. Recall that the two force
+components at a hard-finger contact are not independent: they are coupled by
+the Coulomb friction cone $|f_{\mathrm{t},i}| \le \mu_i f_{\mathrm{n},i}$, so
+for the force-closure margin computation in
+Chapter~\ref{chap:margin} each contact's two columns are replaced by the two
+edge generators of the (linearized) friction cone before imposing
+$\boldsymbol{\lambda} \ge \boldsymbol{0}$.
+
+\section{Wrenches, Contact Forces, and Internal Forces}
+
+To analyze force closure, it is necessary to distinguish between the forces applied at the contacts, the resulting wrench acting on the object, and internal forces within the contact force system. These concepts are connected through the grasp matrix.
+
+\subsection{Contact Forces and Wrenches}
+
+Let the contact forces and moments generated by the robot at the contact points be represented by the vector
+
+\begin{equation}
+\boldsymbol{\lambda}
+=
+\begin{bmatrix}
+\boldsymbol{\lambda}_1 \
+\boldsymbol{\lambda}*2 \
+\vdots \
+\boldsymbol{\lambda}*{n_c}
+\end{bmatrix}.
+\end{equation}
+
+The grasp matrix $G$ maps the contact forces to the resulting wrench acting on the object:
+
+\begin{equation}
+\mathbf{w} = G\boldsymbol{\lambda},
+\end{equation}
+
+where the wrench is given by
+
+\begin{equation}
+\mathbf{w}
+=
+\begin{bmatrix}
+\mathbf{f} \
+\boldsymbol{\tau}
+\end{bmatrix}
+\in \mathbb{R}^{6}.
+\end{equation}
+
+Here, $\mathbf{f}$ represents the net force acting on the object, while $\boldsymbol{\tau}$ represents the net torque. Consequently, the grasp matrix describes how the individual contact forces contribute to the overall force and torque acting on the object.
+
+\subsection{Wrench Directions}
+
+A wrench direction represents a possible direction in the object's wrench space. In three-dimensional space, a wrench has six independent components: three translational force components and three rotational torque components.
+
+Examples of wrench directions include:
+
+\begin{itemize}
+\item a force in the positive $x$-direction,
+\item a force in the negative $y$-direction,
+\item a torque about the $z$-axis, or
+\item a combination of forces and torques.
+\end{itemize}
+
+Thus, the wrench space can be viewed as a six-dimensional space containing all possible combinations of forces and torques acting on the object.
+
+For a grasp to have the ability to resist arbitrary external disturbances, the contacts must be capable of generating wrenches in all relevant directions. This is examined through the rank of the grasp matrix. In three dimensions, this requires
+
+\begin{equation}
+\operatorname{rank}(G) = 6.
+\end{equation}
+
+More generally,
+
+\begin{equation}
+\operatorname{rank}(G) = n_{\nu},
+\end{equation}
+
+where $n_{\nu}$ denotes the dimension of the object's wrench space.
+
+If the rank is smaller than $n_{\nu}$, there exists at least one wrench direction that cannot be generated by the contact forces. Consequently, the contacts cannot provide force closure.
+
+The rank condition can therefore be interpreted as:
+
+\begin{quote}
+Can the contact forces generate wrenches in every required direction of the object's wrench space?
+\end{quote}
+
+\subsection{Wrench Acting on the Object}
+
+The wrench acting on the object is the net effect of all contact forces and moments. It is obtained through
+
+\begin{equation}
+\mathbf{w} = G\boldsymbol{\lambda}.
+\end{equation}
+
+For example, consider two contact forces acting on opposite sides of an object. If the forces act in the same direction, they can produce a net translational force. If the forces are arranged such that their translational effects cancel while their moment contributions do not, they can instead produce a torque.
+
+The grasp matrix therefore provides the mapping
+
+\begin{equation}
+\boxed{
+\boldsymbol{\lambda}
+\xrightarrow{;G;}
+\mathbf{w}
+}
+\end{equation}
+
+where $\boldsymbol{\lambda}$ describes the contact forces and $\mathbf{w}$ describes their combined effect on the object.
+
+\subsection{Internal Forces}
+
+Not all contact forces necessarily result in a net wrench on the object. Some combinations of contact forces cancel each other such that
+
+\begin{equation}
+G\boldsymbol{\lambda} = \mathbf{0}.
+\end{equation}
+
+Such force combinations are referred to as \textit{internal forces}. They produce no net force or torque on the object, but they can still generate significant forces at the individual contacts.
+
+For example, consider a robot squeezing an object from two opposite sides:
+
+\begin{equation}
+\mathbf{F}_1 = -\mathbf{F}_2.
+\end{equation}
+
+The two forces cancel with respect to the object, resulting in
+
+\begin{equation}
+\mathbf{F}_1+\mathbf{F}_2 = \mathbf{0}.
+\end{equation}
+
+Assuming that their moments also cancel, the corresponding contact-force vector satisfies
+
+\begin{equation}
+G\boldsymbol{\lambda} = \mathbf{0}.
+\end{equation}
+
+The object therefore experiences no net wrench, even though the robot is applying forces at the contacts.
+
+The set of all contact-force vectors that produce no net wrench is the nullspace of the grasp matrix:
+
+\begin{equation}
+\mathcal{N}(G)
+= \left\{
+\boldsymbol{\lambda}
+\mid
+G\boldsymbol{\lambda}=\mathbf{0}
+\right\}.
+\end{equation}
+
+Internal forces are important in grasping because they can increase the normal forces at the contacts and thereby increase the available frictional forces without directly accelerating the object.
+
+\subsection{Internal Forces and Force Closure}
+
+The existence of internal forces is not, by itself, a problem. In fact, internal forces are often necessary to maintain a stable grasp. The relevant question is whether the internal forces can be appropriately controlled by the robot.
+
+This distinction appears in the force-closure analysis through the condition
+
+\begin{equation}
+\mathcal{N}(G)\cap\mathcal{N}(J)={\mathbf{0}},
+\end{equation}
+
+where $J$ represents the relevant robot/contact Jacobian formulation.
+
+The condition states that there should be no non-zero internal force that simultaneously belongs to the nullspace of both $G$ and $J$. In the formulation used for the force-closure test, such a force would produce no wrench on the object while also being uncontrollable through the robot's actuation.
+
+This is the purpose of the third step of the approximate force-closure test. LP3 searches for such a problematic contact-force vector by imposing
+
+\begin{equation}
+G\boldsymbol{\lambda}=\mathbf{0},
+\end{equation}
+
+and
+
+\begin{equation}
+J\boldsymbol{\lambda}=\mathbf{0}.
+\end{equation}
+
+If LP3 finds a strictly feasible solution with $d^*>0$, an admissible non-zero internal force exists in this intersection, and force closure does not exist. Conversely, if
+
+\begin{equation}
+d^*=0,
+\end{equation}
+
+no such strictly feasible uncontrollable internal force is found, satisfying the final condition for force closure when the preceding tests have also been passed.
+
+\subsection{Relation to the Force-Closure Test}
+
+The concepts above can be summarized by considering the three main stages of the approximate force-closure test.
+
+\begin{enumerate}
+\item \textbf{Rank of the grasp matrix:}
+
+```
+\begin{equation}
+    \operatorname{rank}(G)=n_{\nu}.
+\end{equation}
+
+This determines whether the contacts can generate all required wrench directions.
+
+\item \textbf{Frictional form closure:}
+
+LP2 determines whether there exists a contact-force configuration that produces no net wrench while remaining strictly inside the friction constraints. A positive optimal value,
+
+\begin{equation}
+    d^*>0,
+\end{equation}
+
+indicates frictional form closure.
+
+\item \textbf{Control of internal forces:}
+
+LP3 examines whether an internal force exists that is also uncontrollable according to the robot's Jacobian. If
+
+\begin{equation}
+    d^*>0,
+\end{equation}
+
+such an internal force exists and force closure does not hold. If
+
+\begin{equation}
+    d^*=0,
+\end{equation}
+
+the required force-closure condition is satisfied, assuming the previous conditions have been fulfilled.
+```
+
+\end{enumerate}
+
+The overall relationship between the quantities can therefore be summarized as
+
+\begin{equation}
+\boxed{
+\boldsymbol{\lambda}
+\xrightarrow{;G;}
+\mathbf{w}
+}
+\end{equation}
+
+where $\boldsymbol{\lambda}$ represents the contact forces and $\mathbf{w}$ represents the resulting wrench on the object. When
+
+\begin{equation}
+G\boldsymbol{\lambda}=\mathbf{0},
+\end{equation}
+
+the contact forces constitute an internal force configuration rather than producing a net wrench on the object.
+
+Thus, the central distinction is:
+
+\begin{equation}
+\boxed{
+\begin{array}{ll}
+G\boldsymbol{\lambda}\neq\mathbf{0}
+&\Rightarrow
+\text{contact forces produce a wrench on the object},[4pt]
+G\boldsymbol{\lambda}=\mathbf{0}
+&\Rightarrow
+\text{contact forces are internal}.
+\end{array}
+}
+\end{equation}
+
+The rank of $G$ determines which wrench directions can be generated, while the nullspace of $G$ describes contact-force combinations that do not generate a net wrench. Both properties are therefore fundamental when analyzing force closure.
+
+
+\section{Force Closure and Form Closure in Grasping}
+
+\section{Related Work on Force Closure Metrics}
+
+\section{Positioning of This Work}
+

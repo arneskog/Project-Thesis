@@ -1,0 +1,139 @@
+% ============================================================
+%  Project Thesis Skeleton -- Force Closure for Object-Aided
+%  Locomotion in Snake Robots
+%  Department of Engineering Cybernetics / Cybernetics and
+%  Robotics, NTNU
+%
+%  Based on the department's official Rapportmal_prosjekt
+%  template (Figurer/ntnulogo.pdf reused from that template).
+% ============================================================
+
+\documentclass[11pt,a4paper]{report}
+
+% ---------- Page geometry (matches official NTNU template) ----------
+\usepackage[lmargin=25mm,rmargin=25mm,tmargin=27mm,bmargin=30mm]{geometry}
+
+% ---------- Language / encoding ----------
+\usepackage[utf8]{inputenc}
+\usepackage[T1]{fontenc}
+\usepackage[english]{babel}
+\usepackage{csquotes}
+
+% ---------- Math ----------
+\usepackage{amsmath}
+\usepackage{amssymb}
+\usepackage{amsfonts}
+\usepackage{mathtools}
+\usepackage{siunitx}
+
+% ---------- Figures / tables ----------
+\usepackage{graphicx}
+\usepackage{subcaption}
+\usepackage{booktabs}
+\usepackage{array}
+\usepackage{caption}
+
+% ---------- Algorithms / pseudocode / code listings ----------
+\usepackage{algorithm}
+\usepackage{algpseudocode}
+\usepackage{listings}
+\usepackage{xcolor}
+
+\lstset{
+  basicstyle=\ttfamily\small,
+  keywordstyle=\color{blue},
+  commentstyle=\color{gray},
+  stringstyle=\color{teal},
+  numbers=left,
+  numberstyle=\tiny\color{gray},
+  breaklines=true,
+  frame=single,
+  captionpos=b
+}
+
+% ---------- Cross-referencing / links ----------
+\usepackage{hyperref}
+\hypersetup{
+  colorlinks=true,
+  linkcolor=black,
+  citecolor=black,
+  urlcolor=blue,
+  bookmarksnumbered=true
+}
+\usepackage{cleveref}
+
+% ---------- Bibliography (biblatex + biber) ----------
+\usepackage[backend=biber,style=ieee,sorting=none]{biblatex}
+\addbibresource{references.bib}
+
+% ---------- Misc ----------
+\usepackage{setspace}
+\onehalfspacing
+\usepackage[textsize=footnotesize]{todonotes}
+\usepackage{fancyhdr}
+\pagestyle{fancy}
+\fancyhf{}
+\fancyhead[L]{\leftmark}
+\fancyhead[R]{\thepage}
+\renewcommand{\headrulewidth}{0.4pt}
+
+% ============================================================
+%  TITLE PAGE
+%  TODO: replace the placeholders below with your own title,
+%  name, supervisor, course code and department.
+% ============================================================
+\title{
+  \includegraphics[scale=0.5]{Figurer/ntnulogo.pdf}\\[1cm]
+  {\Large Project Thesis}\\[0.5cm]
+  {\huge\bfseries A Force Closure Margin for Object-Aided\\
+  Locomotion in Snake Robots}\\[0.4cm]
+  {\large A Metric for Force-Closure-Aware Path Planning}
+}
+\author{
+  \normalsize Arne Skogan \\[0.3cm]
+  \small Supervisor: [Supervisor Name] \\
+  \small [Department, e.g. Department of Engineering Cybernetics] \\
+  \small [Course code, e.g. TTK4551] -- Project Thesis
+}
+\date{\today}
+\setlength{\marginparwidth}{2cm}
+\begin{document}
+
+% ---------------- Front matter ----------------
+\pagenumbering{roman}
+\maketitle
+
+\input{chapters/abstract.tex}
+\input{chapters/preface.tex}
+
+\listoffigures
+\addcontentsline{toc}{chapter}{List of Figures}
+
+\listoftables
+\addcontentsline{toc}{chapter}{List of Tables}
+
+\newpage
+\tableofcontents
+\newpage
+
+% ---------------- Main matter ----------------
+\pagenumbering{arabic}
+\setcounter{page}{1}
+
+\input{chapters/introduction.tex}
+\input{chapters/background.tex}
+\input{chapters/theory.tex}
+\input{chapters/margin_force_closure.tex}
+\input{chapters/implementation.tex}
+\input{chapters/simulation.tex}
+\input{chapters/evaluation.tex}
+\input{chapters/conclusion.tex}
+
+% ---------------- References ----------------
+\printbibliography[heading=bibintoc,title={References}]
+
+% ---------------- Appendices ----------------
+\appendix
+\input{appendices/appendix_a.tex}
+
+\end{document}
