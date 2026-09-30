@@ -1,0 +1,113 @@
+% ==================================================================
+%  REMOVED DUPLICATES  (restructuring 2026-09-30)
+%  This file is NOT \input in main.tex. It keeps every passage that
+%  was dropped because the same content is kept elsewhere, together
+%  with where it came from and where the kept version now lives.
+%  Delete this file once you are happy with the restructuring.
+% ==================================================================
+
+% ------------------------------------------------------------------
+% 1. From background.tex, "Wrenches, Contact Forces, and Internal
+%    Forces" -> "Contact Forces and Wrenches".
+%    Kept version: theory.tex, Sec. Grasp Matrix -> "Contact Forces
+%    and Wrenches" (eq:lambda-stacked, eq:wrench-map), rewritten for
+%    the planar case. Original (3D wrench, broken LaTeX):
+% ------------------------------------------------------------------
+% \begin{equation}
+% \boldsymbol{\lambda}
+% =
+% \begin{bmatrix}
+% \boldsymbol{\lambda}_1 \
+% \boldsymbol{\lambda}*2 \
+% \vdots \
+% \boldsymbol{\lambda}*{n_c}
+% \end{bmatrix}.
+% \end{equation}
+% The grasp matrix $G$ maps the contact forces to the resulting wrench
+% acting on the object:  \mathbf{w} = G\boldsymbol{\lambda},
+% where the wrench is given by  \mathbf{w} = [\mathbf{f}; \boldsymbol{\tau}] \in \mathbb{R}^{6}.
+
+% ------------------------------------------------------------------
+% 2. From background.tex, "Wrench Directions": the separate equation
+%    rank(G) = 6 ("In three dimensions, this requires").
+%    Kept version: theory.tex, Sec. Nullspace Cases, eq:rank-condition
+%    (states n_nu = 6 in 3D and n_nu = 3 in the plane).
+% ------------------------------------------------------------------
+
+% ------------------------------------------------------------------
+% 3. From background.tex, "Wrench Acting on the Object":
+%    "The wrench acting on the object is the net effect of all contact
+%     forces and moments. It is obtained through  w = G lambda."
+%    and the boxed mapping  lambda --G--> w  with the sentence
+%    "where lambda describes the contact forces and w describes their
+%     combined effect on the object."
+%    Kept version: theory.tex, eq:wrench-map. The two-forces example
+%    paragraph from this subsection was kept.
+% ------------------------------------------------------------------
+
+% ------------------------------------------------------------------
+% 4. From background.tex, "Relation to the Force-Closure Test" (end):
+%    the second boxed  lambda --G--> w  mapping, the repeated
+%    G lambda = 0 equation, the boxed case distinction
+%       G lambda != 0  => contact forces produce a wrench on the object
+%       G lambda  = 0  => contact forces are internal
+%    and the closing sentence:
+%    "The rank of G determines which wrench directions can be generated,
+%     while the nullspace of G describes contact-force combinations that
+%     do not generate a net wrench. Both properties are therefore
+%     fundamental when analyzing force closure."
+%    Kept version: theory.tex, Sec. Nullspace Cases (rank and N(G)
+%    paragraphs say the same). Re-use the closing sentence as a summary
+%    there if you like it.
+% ------------------------------------------------------------------
+
+% ------------------------------------------------------------------
+% 5. From theory.tex, "Contact and Friction Model" (Handbook p. 678):
+%    "Wrench intensities lambda in N(G) are referred to as internal
+%     object forces. These wrenches are internal because they do not
+%     contribute to the acceleration of the object, i.e. G lambda = 0.
+%     Instead, these wrench intensities affect the tightness of the
+%     grasp. Thus, internal wrench intensities play a fundamental role in
+%     maintaining grasps that rely on friction."
+%    Kept version: merged (paraphrased) into theory.tex, Sec. Nullspace
+%    Cases -> "Internal forces" paragraph, with the p. 678 citation.
+% ------------------------------------------------------------------
+
+% ------------------------------------------------------------------
+% 6. From margin_force_closure.tex, "Wrench Space and Force Closure":
+%    "Every admissible contact force induces a wrench (f_x, f_y, tau) on
+%     the robot body about a reference point P_0 (e.g. the body's center
+%     of mass), with tau = (p_i - P_0) x f_i. Collecting the normal- and
+%     tangential-force contributions of all contacts into the grasp
+%     matrix G in R^{3 x 2n_c} (Sec. grasp-matrix) gives the linear map
+%     from contact force coefficients c = [f_{n,1}, f_{t,1}, ...,
+%     f_{n,n_c}, f_{t,n_c}]^T to the resulting body wrench:
+%        w = G c,  w = (f_x, f_y, tau) in R^3."
+%    Kept version: theory.tex, Sec. Grasp Matrix -> "Contact Forces and
+%    Wrenches" (eq:wrench-map, same map with c renamed lambda).
+% ------------------------------------------------------------------
+
+% ------------------------------------------------------------------
+% 7. From margin_force_closure.tex, "LP2" (first half):
+%    "Following the frictional form-closure test of Bicchi et al.
+%     (Springer Handbook of Robotics, Sec. 38.4.2), the friction cone at
+%     each contact is linearized into a set of half-space constraints
+%     F c <= 0, where F collects the facet normals of every contact's
+%     linearized friction cone. ..."
+%    \begin{equation}
+%    \begin{aligned}
+%    \underset{\mathbf{c},\, d}{\text{maximize}} \quad & d \\
+%    \text{subject to} \quad & G\mathbf{c} = \mathbf{0}, \\
+%    & F\mathbf{c} \le -\mathbf{1}\, d, \\
+%    & d \ge 0, \\
+%    & \mathbf{e}^\top \mathbf{c} \le n_c,
+%    \end{aligned}
+%    \end{equation}
+%    "where 1 and e are vectors of ones of appropriate dimension, and
+%     the normalization constraint e^T c <= n_c prevents the trivial
+%     unbounded scaling of c."
+%    Kept version: theory.tex, Sec. LP2 (eq:lp2), taken from
+%    implementation.tex. NOTE the differences: sign convention of F
+%    (F >= 0 matches eq:face-normal-full) and e (selects normal
+%    components, not all ones). The intro sentence was kept.
+% ------------------------------------------------------------------

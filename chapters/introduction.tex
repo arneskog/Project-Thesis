@@ -1,27 +1,56 @@
 \chapter{Introduction}
 \label{chap:introduction}
 
-% TODO: Introduction structure suggestion:
-%  1. Motivation -- why object-aided locomotion matters for snake
-%     robots (e.g. traversing environments where pure body-terrain
-%     contact is insufficient, obstacle-aided locomotion, etc.)
-%  2. Problem statement -- why force closure is the right lens, and
-%     why a *metric* (margin) for it is needed for path planning,
-%     not just a binary force-closure test.
-%  3. Objectives / research questions of the project thesis.
-%  4. Scope and delimitations -- what is in vs. out of scope
-%     (e.g. 2D vs. 3D, specific robot model, specific environment
-%     class).
-%  5. Report outline -- one paragraph summarising each remaining
-%     chapter.
+% STRUCTURE (restructured 2026-09-30, inspired by Nordal (2026), Ch. 1):
+%   1.1 Motivation   (absorbs the old "Problem Statement" section)
+%   1.2 Background   (absorbs the old Background chapter's literature
+%                     sections -- background.tex is no longer \input)
+%   1.3 Objective    (absorbs the old "Scope and Delimitations" and
+%                     "Report Outline" sections)
+% The technical content of the old Background chapter (grasp matrix,
+% wrenches, internal forces, LP3) has been moved into the Theory
+% chapter; see the provenance comments there.
 
 \section{Motivation}
+\label{sec:motivation}
 
-\section{Problem Statement}
+% TODO (from original introduction.tex TODO list, items 1-2):
+%  - Why object-aided locomotion matters for snake robots (e.g.
+%    traversing environments where pure body-terrain contact is
+%    insufficient, obstacle-aided locomotion, etc.).
+%  - Problem statement [was its own section "Problem Statement"]:
+%    why force closure is the right lens, and why a *metric* (margin)
+%    for it is needed for path planning, not just a binary
+%    force-closure test.
 
-\section{Objectives}
+\section{Background}
+\label{sec:background}
 
-\section{Scope and Delimitations}
+% TODO: Situate the project in the literature (cf. Nordal (2026),
+% Sec. 1.2 "Previous Work").
+% [Moved from background.tex, chapter-level TODO comment, and the
+%  empty sections "Snake Robot Locomotion", "Object-Aided Locomotion",
+%  "Force Closure and Form Closure in Grasping", "Related Work on
+%  Force Closure Metrics" and "Positioning of This Work".]
+%  - Snake robot locomotion: standard gaits, obstacle-aided
+%    locomotion, prior NTNU/other work on snake robots.
+%  - Object-aided / environment-aided locomotion specifically.
+%  - Grasping and manipulation literature on force closure and
+%    form closure (classical definitions, e.g. Nguyen, Bicchi,
+%    Murray/Li/Sastry).
+%  - Existing metrics for grasp quality / force closure margins,
+%    and why they do or do not transfer to the snake-robot,
+%    path-planning setting.
+%  - Positioning: what this project adds relative to
+%    \cite{gravdahl2026formclosure} and \cite{nordal2026grip}.
 
-\section{Report Outline}
+\section{Objective}
+\label{sec:objective}
 
+% TODO (from original introduction.tex TODO list, items 3-5):
+%  - Objectives / research questions of the project thesis.
+%  - Scope and delimitations [was its own section "Scope and
+%    Delimitations"]: what is in vs. out of scope (e.g. 2D vs. 3D,
+%    specific robot model, specific environment class).
+%  - Report outline [was its own section "Report Outline"]: one
+%    paragraph summarising each remaining chapter.

@@ -13,90 +13,34 @@
 %  - Validation of the implementation against known/simple cases
 %    before using it in simulation (e.g. hand-computable examples).
 %  - Integration into the path planner, if implemented.
+%
+% STRUCTURE (restructured 2026-09-30): Software and Tools, Algorithm.
+% Moved OUT of this chapter:
+%  - The LP2 formulation, lambda ordering, and the explanation of d and
+%    of the normalization e^T lambda <= n_c -> theory.tex, Sec. LP2
+%    (eq:lp2). Only the solver-specific conversion is kept here.
+% Removed (empty, not in the new outline): "Numerical Considerations",
+% "Verification of the Implementation" -- their intended content is in
+% the TODO list above.
 
 \section{Software and Tools}
+\label{sec:software}
+
+% TODO: language, libraries, solver (e.g. scipy.optimize.linprog), simulator.
 
 \section{Algorithm}
+\label{sec:algorithm}
 
+% [First paragraph kept from implementation.tex, section "Algorithm";
+%  the rest of the LP2 derivation that followed it was moved to
+%  theory.tex, Sec. LP2.]
 To evaluate the force-closure quality of a given contact configuration, the
-linear program (LP2) from the Handbook of Robotics, Chapter 28.4.2, is
-employed. The optimization determines a force-closure margin $d$ by finding
-a feasible contact-force distribution that maximizes the minimum margin to
-the boundaries of the contact constraints.
+linear program LP2~\eqref{eq:lp2} from \cite[Sec.~28.4.2]{prattichizzo2008grasping}
+is employed. The optimization determines a force-closure margin $d$ by
+finding a feasible contact-force distribution that maximizes the minimum
+margin to the boundaries of the contact constraints.
 
-Let the stacked vector of contact-force intensities be defined as
-\begin{equation}
-    \boldsymbol{\lambda}
-    =
-    \begin{bmatrix}
-        f_{n1} & f_{t1} &
-        f_{n2} & f_{t2} &
-        \cdots &
-        f_{n n_c} & f_{t n_c}
-    \end{bmatrix}^{T},
-\end{equation}
-where $f_{ni}$ and $f_{ti}$ denote the normal and tangential force
-components at contact $i$, respectively. The grasp matrix $G$ maps these
-contact-force intensities to the resultant wrench acting on the object.
-
-The force-closure margin is obtained by solving
-\begin{equation}
-\begin{aligned}
-    \underset{\boldsymbol{\lambda},d}{\operatorname{maximize}}
-    \quad & d \\[2mm]
-    \text{subject to}
-    \quad & G\boldsymbol{\lambda} = \boldsymbol{0},\\
-    & F\boldsymbol{\lambda} - \boldsymbol{1}d \geq \boldsymbol{0},\\
-    & d \geq 0,\\
-    & \boldsymbol{e}^{T}\boldsymbol{\lambda} \leq n_c.
-\end{aligned}
-\label{eq:force_closure_lp}
-\end{equation}
-
-Here, $F$ represents the matrix describing the linearized contact
-constraints, while $\boldsymbol{1}$ is a vector of ones with the same
-number of rows as $F$. The equilibrium constraint
-$G\boldsymbol{\lambda}=\boldsymbol{0}$ ensures that the contact forces
-produce zero resultant wrench. Consequently, the solution represents an
-internal force distribution that is in equilibrium.
-
-The inequality
-\begin{equation}
-    F\boldsymbol{\lambda} - \boldsymbol{1}d
-    \geq \boldsymbol{0}
-\end{equation}
-can equivalently be written component-wise as
-\begin{equation}
-    d \leq (F\boldsymbol{\lambda})_i,
-    \qquad
-    i=1,\ldots,m,
-\end{equation}
-where $m$ is the number of rows of $F$. Thus, $d$ is a lower bound on all
-contact-constraint margins. Maximizing $d$ therefore maximizes the minimum
-margin over all constraints.
-
-A normalization constraint is required because the equilibrium and contact
-constraints are homogeneous in $\boldsymbol{\lambda}$. Without such a
-constraint, any feasible force distribution could be multiplied by an
-arbitrary positive scalar, causing $d$ to increase without bound. The
-normalization
-\begin{equation}
-    \boldsymbol{e}^{T}\boldsymbol{\lambda} \leq n_c
-\end{equation}
-fixes the scale of the force distribution. For the ordering
-\[
-    \boldsymbol{\lambda}
-    =
-    [f_{n1},f_{t1},f_{n2},f_{t2},\ldots]^T,
-\]
-the vector $\boldsymbol{e}$ is constructed such that
-\begin{equation}
-    \boldsymbol{e}^{T}\boldsymbol{\lambda}
-    =
-    \sum_{i=1}^{n_c} f_{ni}.
-\end{equation}
-
-\subsubsection{Conversion to Standard LP Form}
+\subsection{Conversion to Standard LP Form}
 
 The optimization is implemented using a linear-programming solver in the
 standard form
@@ -247,8 +191,3 @@ force-closure margin for the given contact configuration.
 \State \Return $m$
 \end{algorithmic}
 \end{algorithm}
-
-\section{Numerical Considerations}
-
-\section{Verification of the Implementation}
-
