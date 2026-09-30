@@ -1,8 +1,26 @@
 \chapter{Theory}
 \label{chap:theory}
 
-% TODO: Lay the mathematical/mechanical groundwork the rest of the
-% report builds on. Suggested structure:
+% ------------------------------------------------------------------
+% STRUCTURE (restructured 2026-09-30, inspired by Nordal (2026), Ch. 2)
+%   2.1 Planar Snake Robot Model
+%   2.2 Grasping with Friction
+%       2.2.1 Grasp Matrix
+%       2.2.2 Hand Jacobian Matrix
+%       2.2.3 Contact and Friction Model
+%       2.2.4 Coulomb Friction Cone
+%   2.3 Force Closure
+%       2.3.1 Nullspace Cases for the Grasp Matrix and Hand Jacobian
+%       2.3.2 Frictional Form Closure  (LP2)
+%       2.3.3 Force Closure            (LP3)
+%
+% Provenance: every moved block is marked with a comment
+%   % [Moved from <file>, <section>]
+% Text that was removed because it duplicated something kept here is
+% collected, with its origin, in chapters/removed_duplicates.tex
+% (not \input in main.tex).
+%
+% Original chapter TODO list (kept for reference):
 %  - Kinematics/dynamics model of the snake robot relevant to
 %    contact forces (link model, contact points, friction model
 %    e.g. Coulomb friction cones).
@@ -14,52 +32,332 @@
 %  - Any coordinate frames, notation, and conventions used
 %    consistently for the rest of the report -- define them here
 %    once so later chapters can just reference \cref{chap:theory}.
+%    [The empty section "Notation and Conventions" was removed; put
+%     notation in a List of Symbols in the front matter instead, as
+%     Nordal (2026) does.]
+% ------------------------------------------------------------------
 
-\section{Notation and Conventions}
+% ==================================================================
+\section{Planar Snake Robot Model}
+\label{sec:snake-model}
+% ==================================================================
 
-\section{Contact and Friction Model}
+% [Moved from margin_force_closure.tex, section "Properties of the
+%  snake robot"]
+Should follow the definition in \textcite{gravdahl2026formclosure}.
+As in \cite{gravdahl2026formclosure,nordal2026grip} the link width is
+neglected; for frictionless contacts this is exact, while with friction it
+slightly changes the moment arms of the tangential contact forces.
 
-A hard-finger (HF) model is used when there is significant contact friction, but the contact patch is small, so that no appreciable friction moment exists. When this model is applied to a contact, all three translational velocity components of the contact point on the hand (i. e., the first three components of vi,hnd) and all three components of the contact force are transmitted through the
-contact. None of the angular velocity components or moment components are transmitted. \textcolor{red}{Claude: For a snake robot pressing a body segment against an obstacle, HF is the used default (point/line contact, neglible tourqe about the surface model)}
-\newline
-\newline
-The soft-finger (SF) model is used in situations in
-which the surface friction and the contact patch are large
-enough to generate significant friction forces and a friction moment about the contact normal. At a contact
-where this model is enforced, the three translational
-velocity components of the contact on the hand and
-the angular velocity component about the contact normal are transmitted (i. e., the first four components of
-vi,hnd). Similarly, all three components of contact force and the normal component of the contact moment are
-transmitted. \textbf{[Handbook of robotics, p 675]}
-\newline
-\newline
-In planar cases, the SF and HF models are equivalent, because the object and the hand lie in a plane.
-Rotations about the contact normals would cause outof-plane motions. \textbf{[Handbook of robotics, p 676]}
-\newline
-\newline
-Wrench intensities $\lambda$ in N (G) are referred to asinternal object forces. These wrenches are internal because
-they do not contribute to the acceleration of the object, i. e., G$\lambda$ = 0. Instead, these wrench intensities affect the tightness of the grasp. Thus, internal wrench intensities
-play a fundamental role in maintaining grasps that rely
-on friction. \textbf{[Handbook of robotics, p 678]}
+\todo[inline]{Write the planar snake model. Cf.\ Nordal (2026) Sec.~2.1
+(unconstrained and constrained kinematics): $n$ links of length $l$, joint
+angles $\boldsymbol{\phi}\in\mathbb{R}^{n-1}$, base coordinates
+$\boldsymbol{q}_0=[x_0\ y_0\ \phi_0]^\top$ and configuration vector
+$\boldsymbol{q}\in\mathbb{R}^{n+2}$.}
 
-\section{Coulomb Friction Cone}
-The Coulomb friction cone is defined as in \cite{prattichizzo2008grasping}. At a contact point $i$, the contact force is decomposed into a normal component $f_{in}$ (pressing into the surface) and two tangential (friction) components $f_{it}, f_{io}$ lying in the contact plane. Coulomb's friction law states that the tangential force cannot exceed the normal force scaled by the friction coefficient $\mu_i$, without the contact slipping:
+% ==================================================================
+\section{Grasping with Friction}
+\label{sec:grasping}
+% ==================================================================
+
+\subsection{Grasp Matrix}
+\label{sec:grasp-matrix}
+
+% [Moved from background.tex, section "The Grasp Matrix", subsection
+%  "Definition following Gravdahl et al. (2026)"]
+\subsubsection{Definition Following Gravdahl et al.}
+\label{sec:grasp-matrix-gravdahl}
+
+\textcite{gravdahl2026formclosure} interpret a planar snake robot in contact
+with a set of obstacles as a grasp, where the obstacles play the role of the
+``fingers'' and the snake's body is the grasped object. The grasp matrix
+$\boldsymbol{G}$ relates the object twist and the contact-point twists,
+\begin{equation}
+    \boldsymbol{\nu}_{\text{contacts}} = \boldsymbol{G}^\top \boldsymbol{\nu}_{\text{object}} ,
+    \label{eq:grasp-matrix-velocity}
+\end{equation}
+and, dually, maps the contact forces to the resultant wrench acting on the
+object,
+\begin{equation}
+    \boldsymbol{w}_{\text{object}} = \boldsymbol{G}\, \boldsymbol{f}_{\text{contacts}} .
+    \label{eq:grasp-matrix-wrench}
+\end{equation}
+
+For a single contact $i$, the \emph{partial grasp matrix} is
+\begin{equation}
+    \tilde{\boldsymbol{G}}_i^\top = \bar{\boldsymbol{R}}_i^\top \boldsymbol{P}_i^\top \in \mathbb{R}^{3 \times 3} ,
+    \label{eq:partial-grasp-matrix}
+\end{equation}
+where
+\begin{equation}
+    \bar{\boldsymbol{R}}_i =
+    \begin{bmatrix}
+        \boldsymbol{R} & \boldsymbol{0} \\
+        \boldsymbol{0} & 1
+    \end{bmatrix} \in \mathbb{R}^{3\times3},
+    \qquad
+    \boldsymbol{P}_i =
+    \begin{bmatrix}
+        \boldsymbol{I}_{2\times2} & \boldsymbol{0} \\
+        \boldsymbol{S}(\boldsymbol{p}_i - \boldsymbol{p}_0) & 1
+    \end{bmatrix} \in \mathbb{R}^{3\times3} ,
+    \label{eq:Rbar-P}
+\end{equation}
+with $\boldsymbol{R}$ the $2\times2$ rotation matrix, $\boldsymbol{I}_{2\times2}$ the $2\times2$
+identity matrix, and $\boldsymbol{S}(\boldsymbol{p}_i - \boldsymbol{p}_0)$ the skew-symmetric
+representation of the displacement between contact point $i$ and a chosen
+reference point $\boldsymbol{p}_0$,
+\begin{equation}
+    \boldsymbol{S}(\boldsymbol{a}) = \begin{bmatrix} -a_y & a_x \end{bmatrix}, \qquad \boldsymbol{a} = (a_x, a_y)^\top .
+    \label{eq:skew-2d}
+\end{equation}
+
+Stacking the partial grasp matrices of all $n_c$ contacts gives the
+\emph{complete} grasp matrix, which is then reduced by the contact model
+matrix $\boldsymbol{H}$:
+\begin{equation}
+    \tilde{\boldsymbol{G}}^\top = \begin{bmatrix} \tilde{\boldsymbol{G}}_1 & \cdots & \tilde{\boldsymbol{G}}_{n_c} \end{bmatrix}^\top \in \mathbb{R}^{3n_c \times 3} ,
+    \qquad
+    \boldsymbol{G}^\top = \boldsymbol{H}\,\tilde{\boldsymbol{G}}^\top .
+    \label{eq:complete-grasp-matrix}
+\end{equation}
+Gravdahl et al.\ restrict their analysis to the point-contact-without-friction
+(PwoF) model, for which $\boldsymbol{H}$ keeps only the normal-force component
+of each contact:
+\begin{equation}
+    \boldsymbol{H}^{\mathrm{PwoF}} =
+    \begin{bmatrix}
+        1 & 0 & 0 & 0 & 0 & 0 & \cdots & 0 & 0 & 0 \\
+        0 & 0 & 0 & 1 & 0 & 0 & \cdots & 0 & 0 & 0 \\
+        \vdots & & & & & & \ddots & & & \vdots \\
+        0 & 0 & 0 & 0 & 0 & 0 & \cdots & 1 & 0 & 0
+    \end{bmatrix} \in \mathbb{R}^{n_c \times 3n_c} ,
+    \label{eq:H-pwof-gravdahl}
+\end{equation}
+so that $\boldsymbol{G} \in \mathbb{R}^{3 \times n_c}$: one column per contact,
+along the contact normal.
+
+% [Moved from background.tex, section "The Grasp Matrix", subsection
+%  "Generalization: the Handbook of Robotics framework"]
+\subsubsection{Generalization to Frictional Contacts}
+\label{sec:grasp-matrix-handbook}
+
+Equations~\eqref{eq:grasp-matrix-velocity}--\eqref{eq:complete-grasp-matrix} are, in
+fact, a specialization of the general grasp-analysis framework in the
+\emph{Handbook of Robotics}, Ch.~28 \cite{prattichizzo2008grasping}
+(Gravdahl et al.\ adopt this nomenclature directly). The Handbook treats $\boldsymbol{H}$
+as a free choice determined by the \emph{contact model}
+(\cref{sec:contact-model}), so that form closure
+(frictionless, PwoF) and force closure (frictional, HF) fall out of the same
+construction --- only $\boldsymbol{H}$ changes. This is the natural route from
+Gravdahl et al.'s form-closure analysis to the force-closure margin this
+thesis develops: the geometry ($\tilde{\boldsymbol{G}}_i$, $\bar{\boldsymbol{R}}_i$,
+$\boldsymbol{P}_i$) is untouched; only the contact-model selection matrix
+$\boldsymbol{H}_i$ needs to be replaced.
+
+For a single planar contact, the Handbook (Table~28.3) gives
+\begin{equation}
+    \boldsymbol{H}_i^{\mathrm{PwoF}} = \begin{bmatrix} 1 & 0 & 0 \end{bmatrix} \in \mathbb{R}^{1\times3} , \qquad \ell_i = 1 ,
+    \label{eq:Hi-pwof-planar}
+\end{equation}
+\begin{equation}
+    \boldsymbol{H}_i^{\mathrm{HF}} = \begin{bmatrix} \boldsymbol{I}_{2\times2} & \boldsymbol{0}_{2\times1} \end{bmatrix} \in \mathbb{R}^{2\times3} , \qquad \ell_i = 2 ,
+    \label{eq:Hi-hf-planar}
+\end{equation}
+noting that in the planar case the hard-finger (HF) and soft-finger (SF)
+models coincide, since there is no out-of-plane axis for a torsional moment
+to act about. Equation~\eqref{eq:Hi-pwof-planar} is exactly
+Gravdahl et al.'s single-contact row in~\eqref{eq:H-pwof-gravdahl}.
+
+\paragraph{Adapting to $n_c$ contacts.}
+Stacking~\eqref{eq:Hi-pwof-planar} and~\eqref{eq:Hi-hf-planar} block-diagonally
+over all $n_c$ contacts gives the complete contact model matrix for each
+case:
+\begin{equation}
+    \boldsymbol{H}^{\mathrm{PwoF}} = \mathrm{Blockdiag}\big(\boldsymbol{H}_1^{\mathrm{PwoF}}, \ldots, \boldsymbol{H}_{n_c}^{\mathrm{PwoF}}\big) \in \mathbb{R}^{n_c \times 3n_c} ,
+    \label{eq:H-pwof-nc}
+\end{equation}
+\begin{equation}
+    \boldsymbol{H}^{\mathrm{HF}} = \mathrm{Blockdiag}\big(\boldsymbol{H}_1^{\mathrm{HF}}, \ldots, \boldsymbol{H}_{n_c}^{\mathrm{HF}}\big) \in \mathbb{R}^{2n_c \times 3n_c} ,
+    \label{eq:H-hf-nc}
+\end{equation}
+written out explicitly, the hard-finger case is
+\begin{equation}
+    \boldsymbol{H}^{\mathrm{HF}} =
+    \left[\begin{array}{ccc|ccc|c|ccc}
+        1 & 0 & 0 & 0 & 0 & 0 & \cdots & 0 & 0 & 0 \\
+        0 & 1 & 0 & 0 & 0 & 0 & \cdots & 0 & 0 & 0 \\
+        0 & 0 & 0 & 1 & 0 & 0 & \cdots & 0 & 0 & 0 \\
+        0 & 0 & 0 & 0 & 1 & 0 & \cdots & 0 & 0 & 0 \\
+        \vdots & & & & & & \ddots & & & \vdots \\
+        0 & 0 & 0 & 0 & 0 & 0 & \cdots & 1 & 0 & 0 \\
+        0 & 0 & 0 & 0 & 0 & 0 & \cdots & 0 & 1 & 0
+    \end{array}\right] \in \mathbb{R}^{2n_c \times 3n_c} .
+    \label{eq:H-hf-nc-explicit}
+\end{equation}
+
+Applying $\boldsymbol{H}$ to the complete partial grasp matrix from
+\eqref{eq:complete-grasp-matrix} (unchanged from the Gravdahl derivation)
+gives the final grasp matrix for each contact model:
+\begin{align}
+    \boldsymbol{G}^{\mathrm{PwoF}} &\in \mathbb{R}^{3 \times n_c} , &
+    \boldsymbol{G}^{\mathrm{PwoF}\top} &= \boldsymbol{H}^{\mathrm{PwoF}}\,\tilde{\boldsymbol{G}}^\top ,
+    \label{eq:G-pwof-nc}\\
+    \boldsymbol{G}^{\mathrm{HF}} &\in \mathbb{R}^{3 \times 2n_c} , &
+    \boldsymbol{G}^{\mathrm{HF}\top} &= \boldsymbol{H}^{\mathrm{HF}}\,\tilde{\boldsymbol{G}}^\top .
+    \label{eq:G-hf-nc}
+\end{align}
+
+Under the hard-finger model, each contact contributes \emph{two} columns to
+$\boldsymbol{G}$ instead of one: the normal-force direction (same as PwoF)
+and the tangential (friction) direction. This is what allows the contacts to
+generate wrenches off the contact normals, which is a necessary ingredient
+for force closure, but is absent by construction from
+Gravdahl et al.'s PwoF-only form-closure analysis. The two force
+components at a hard-finger contact are not independent: they are coupled by
+the Coulomb friction cone $|f_{\mathrm{t},i}| \le \mu_i f_{\mathrm{n},i}$
+(\cref{sec:friction-cone}), so
+for the force-closure margin computation in
+Chapter~\ref{chap:margin} each contact's two columns are replaced by the two
+edge generators of the (linearized) friction cone before imposing
+$\boldsymbol{\lambda} \ge \boldsymbol{0}$.
+
+% [Moved from background.tex, section "Wrenches, Contact Forces, and
+%  Internal Forces", subsections "Contact Forces and Wrenches" and
+%  "Wrench Acting on the Object" (merged). Changed: wrench written for
+%  the planar case (R^3 instead of R^6), and the broken LaTeX in the
+%  lambda vector fixed. The repeated equations w = G lambda were
+%  removed -> removed_duplicates.tex.]
+\subsubsection{Contact Forces and Wrenches}
+\label{sec:contact-forces-wrenches}
+
+To analyze force closure, it is necessary to distinguish between the forces
+applied at the contacts, the resulting wrench acting on the object, and
+internal forces within the contact force system. These concepts are
+connected through the grasp matrix.
+
+Let the contact forces transmitted at the $n_c$ contact points be stacked in
+the vector
+\begin{equation}
+    \boldsymbol{\lambda}
+    =
+    \begin{bmatrix}
+        \boldsymbol{\lambda}_1^\top & \boldsymbol{\lambda}_2^\top & \cdots & \boldsymbol{\lambda}_{n_c}^\top
+    \end{bmatrix}^\top ,
+    \label{eq:lambda-stacked}
+\end{equation}
+which for HF contacts in the plane is ordered as
+$\boldsymbol{\lambda} = [f_{n1},\, f_{t1},\, f_{n2},\, f_{t2},\, \ldots,\, f_{n n_c},\, f_{t n_c}]^\top$,
+where $f_{ni}$ and $f_{ti}$ denote the normal and tangential force
+components at contact~$i$.
+% [The explicit ordering sentence above is moved from implementation.tex,
+%  section "Algorithm".]
+The grasp matrix maps the contact forces to the resulting wrench acting on
+the object,
+\begin{equation}
+    \boldsymbol{w} = \boldsymbol{G}\boldsymbol{\lambda},
+    \qquad
+    \boldsymbol{w} =
+    \begin{bmatrix}
+        \boldsymbol{f} \\ \tau
+    \end{bmatrix}
+    \in \mathbb{R}^{3},
+    \label{eq:wrench-map}
+\end{equation}
+where $\boldsymbol{f}=(f_x,f_y)$ is the net force acting on the object and
+$\tau$ the net torque about the reference point $\boldsymbol{p}_0$.
+Each column of $\boldsymbol{G}$ is therefore a \emph{primitive wrench} ---
+the wrench produced by a unit force along one basis direction (normal or
+tangential) at one contact.
+% [Previous two sentences moved from margin_force_closure.tex,
+%  subsection "Wrench Space and Force Closure".]
+Consequently, the grasp matrix describes how the individual contact forces
+contribute to the overall force and torque acting on the object.
+
+For example, consider two contact forces acting on opposite sides of an
+object. If the forces act in the same direction, they can produce a net
+translational force. If the forces are arranged such that their
+translational effects cancel while their moment contributions do not, they
+can instead produce a torque.
+
+% ------------------------------------------------------------------
+\subsection{Hand Jacobian Matrix}
+\label{sec:hand-jacobian}
+
+\todo[inline]{Write this subsection (new -- no existing text). Cf.\ Nordal
+(2026) Sec.~2.4.4--2.4.5 (task/contact Jacobians and the hand/snake
+Jacobian) and Handbook Ch.~28.2. Key points from the project notes:
+kinematics $\boldsymbol{J}\dot{\boldsymbol{q}}=\boldsymbol{G}^\top\boldsymbol{\nu}$,
+statics $\boldsymbol{\tau}=\boldsymbol{J}^\top\boldsymbol{\lambda}$; for the
+floating-base snake $\boldsymbol{J}_{\mathrm{snk}}=[\boldsymbol{G}^\top\ |\ \boldsymbol{J}_\phi]$.}
+
+% ------------------------------------------------------------------
+% [Moved from theory.tex, section "Contact and Friction Model".
+%  NOTE: the HF/SF paragraphs are close to verbatim from the Handbook
+%  (pp. 675-676) -- paraphrase before submission. The Handbook
+%  paragraph on internal forces (p. 678) that was here has been moved
+%  to Sec. "Nullspace Cases" below.]
+\subsection{Contact and Friction Model}
+\label{sec:contact-model}
+
+A hard-finger (HF) model is used when there is significant contact friction,
+but the contact patch is small, so that no appreciable friction moment
+exists. When this model is applied to a contact, all three translational
+velocity components of the contact point on the hand (i.e., the first three
+components of $\boldsymbol{\nu}_{i,\mathrm{hnd}}$) and all three components of
+the contact force are transmitted through the contact. None of the angular
+velocity components or moment components are transmitted.
+\textcolor{red}{Claude: For a snake robot pressing a body segment against an
+obstacle, HF is the used default (point/line contact, negligible torque about
+the surface normal).}
+
+The soft-finger (SF) model is used in situations in which the surface
+friction and the contact patch are large enough to generate significant
+friction forces and a friction moment about the contact normal. At a contact
+where this model is enforced, the three translational velocity components of
+the contact on the hand and the angular velocity component about the contact
+normal are transmitted (i.e., the first four components of
+$\boldsymbol{\nu}_{i,\mathrm{hnd}}$). Similarly, all three components of
+contact force and the normal component of the contact moment are transmitted
+\cite[p.~675]{prattichizzo2008grasping}.
+
+In planar cases, the SF and HF models are equivalent, because the object and
+the hand lie in a plane. Rotations about the contact normals would cause
+out-of-plane motions \cite[p.~676]{prattichizzo2008grasping}.
+
+% ------------------------------------------------------------------
+% [Moved from theory.tex, section "Coulomb Friction Cone"]
+\subsection{Coulomb Friction Cone}
+\label{sec:friction-cone}
+
+The Coulomb friction cone is defined as in \cite{prattichizzo2008grasping}.
+At a contact point $i$, the contact force is decomposed into a normal
+component $f_{in}$ (pressing into the surface) and two tangential (friction)
+components $f_{it}, f_{io}$ lying in the contact plane. Coulomb's friction
+law states that the tangential force cannot exceed the normal force scaled by
+the friction coefficient $\mu_i$, without the contact slipping:
 \begin{equation}
     \mathcal{F}_i = \left\{ (f_{in}, f_{it}, f_{io}) \;\middle|\; \sqrt{f_{it}^2 + f_{io}^2} \le \mu_i f_{in} \right\}.
     \label{eq:friction-cone-explicit}
 \end{equation}
-The set $\mathcal{F}_i$ contains all admissible (non-slipping) contact forces at point $i$. Plotted with $f_{in}$ as one axis and $(f_{it}, f_{io})$ as the other two, this set forms a \emph{cone}: the allowed friction magnitude grows linearly with the normal force.
+The set $\mathcal{F}_i$ contains all admissible (non-slipping) contact forces
+at point $i$. Plotted with $f_{in}$ as one axis and $(f_{it}, f_{io})$ as the
+other two, this set forms a \emph{cone}: the allowed friction magnitude grows
+linearly with the normal force.
 
-More generally, when all $\ell_i$ force components at contact $i$ are stacked into a vector $\boldsymbol{\lambda}_i \in \mathbb{R}^{\ell_i}$, the friction cone is written compactly using a (possibly weighted) norm $\|\cdot\|_w$:
+More generally, when all $\ell_i$ force components at contact $i$ are stacked
+into a vector $\boldsymbol{\lambda}_i \in \mathbb{R}^{\ell_i}$, the friction
+cone is written compactly using a (possibly weighted) norm $\|\cdot\|_w$:
 \begin{equation}
-    \mathcal{F}_i = \left\{ \boldsymbol{\lambda}_i \in \mathbb{R}^{\ell_i} \;\middle|\; \|\boldsymbol{\lambda}_i\|_w \le \mu_i f_{in} \right\}.
+    \mathcal{F}_i = \left\{ \boldsymbol{\lambda}_i \in \mathbb{R}^{\ell_i} \;\middle|\; \|\boldsymbol{\lambda}_i\|_w \le \mu_i f_{in} \right\},
     \label{eq:friction-cone-general}
 \end{equation}
-
-Where $\|\boldsymbol{\lambda}_i\|_w$ detonates a weighted quadratic norm, and Table \ref{tab:norms-contact-models} defines useful norms for the different contact models. 
+where $\|\boldsymbol{\lambda}_i\|_w$ denotes a weighted quadratic norm;
+\cref{tab:norms-contact-models} defines useful norms for the different
+contact models.
 \begin{table}[htbp]
     \centering
-    \caption{Norms for the three main contact models}
+    \caption{Norms for the three main contact models.}
     \label{tab:norms-contact-models}
     \begin{tabular}{ll}
         \toprule
@@ -72,45 +370,79 @@ Where $\|\boldsymbol{\lambda}_i\|_w$ detonates a weighted quadratic norm, and Ta
     \end{tabular}
 \end{table}
 
-\textbf{Interpretation:} $\mathcal{F}_i$ is the set of physically admissible contact forces that keep contact $i$ from slipping. A required contact force lying \emph{inside} the cone means the contact holds; one falling outside means the surfaces slip. Force closure requires a set of contacts whose friction cones, in combination, can resist any external disturbance force/wrench. \textbf{[Handbook of robotics, p 685]}
+% [Moved from margin_force_closure.tex, subsection "Wrench Space and
+%  Force Closure" (planar contact description and eq. "friction-cone").
+%  Symbols changed from mu to mu_i to match the general cone above.]
+\paragraph{Planar case.}
+For a planar contact between the snake robot's body and an obstacle at
+$\boldsymbol{p}_i \in \mathbb{R}^2$, with unit outward normal
+$\boldsymbol{n}_i$ and tangent $\boldsymbol{t}_i = \boldsymbol{n}_i^{\perp}$,
+the out-of-plane component $f_{io}$ vanishes and the cone reduces to a planar
+wedge. The contact transmits the force
+\begin{equation}
+    \boldsymbol{f}_i = f_{n,i}\,\boldsymbol{n}_i + f_{t,i}\,\boldsymbol{t}_i,
+    \qquad f_{n,i} \ge 0,\ \ |f_{t,i}| \le \mu_i f_{n,i},
+    \label{eq:friction-cone}
+\end{equation}
+but no moment about the contact point (HF contact model).
 
-\section{Nullspace cases for G and J}
-From handbook of robotics:
-\textbf{Graspable, indeterminate, defective, redundant, hyperstatic}.
-"Because the snake's base is unactuated and unsupported, its Jacobian contains G as the base block, and the hand-grasp distinction between defective and hyperstatic grasps collapses: a contact force that loads no joint and no base coordinate is necessarily internal."
+\textbf{Interpretation:} $\mathcal{F}_i$ is the set of physically admissible
+contact forces that keep contact $i$ from slipping. A required contact force
+lying \emph{inside} the cone means the contact holds; one falling outside
+means the surfaces slip. Force closure requires a set of contacts whose
+friction cones, in combination, can resist any external disturbance
+force/wrench \cite[p.~685]{prattichizzo2008grasping}.
 
+% [Moved from theory.tex, section "Force Closure Tests" (intro and all
+%  its subsections). Placed here because the linearized cone (matrix F)
+%  is what LP2 and LP3 below are built on. Subsections demoted to
+%  paragraphs.]
+\subsubsection{Linearized Friction Cone}
+\label{sec:linearized-cone}
 
-\section{Force Closure: Formal Definition}
-Claude: Most sources use "force closure" for a contact-only property, which is exactly the Handbook's frictional form closure (Def. 28.9). Only a smaller group, including the Handbook's own Def. 28.10, makes force closure depend on the robot's actuators. The Handbook itself says Def. 28.9 is what Murray et al. call force closure.
+The friction cone is a smooth, curved surface: the friction constraint
+\eqref{eq:friction-cone-explicit} is quadratic and requires nonlinear
+programming techniques to solve. It is, however, possible to work with
+approximate tests \cite[p.~686]{prattichizzo2008grasping}. One approach is to
+replace it with a polyhedral (pyramidal) cone, defined as the nonnegative
+span of a finite set of generator vectors. This way it is possible to solve
+it with linear programming techniques. This will later in the report be used
+for checking whether a candidate contact configuration for the snake robot
+satisfies force closure.
 
-Def. 28.9 requires rank G = $n_v$ and a squeeze $\lambda \in Int(F)$ with G $\lambda = 0$ (contacts and friction only). Def. 28.10 adds N(G) N($J^T$) = 0, meaning the hand's joints can control every squeeze.
-\subsection{Frictional Form Closure}
-\subsection{Force Closure}
-\section{Force Closure Tests}
-
-\textbf{[Handbook of robotics, p 686]} The Friction cone is a smooth, curved surface. Where the friction constraint \eqref{eq:friction-cone-explicit} is quadratic and requires nonlinear programming techniques to solve. However is it possible to work with approximate tests. 
-
-One approach is to replace it with polyhedral (pyramidal) cone, defined as the nonnegative span of a finite set of generator vectors. This way it is possible to solve it with linear programming techniques. This will later in the report be used for checking whether a candidate contact configuration for the snake robot satisfies force closure.
-
-\subsection{Generators of a Polyhedral Cone}
-
-Any polyhedral cone can be represented as the set of all nonnegative linear combinations of a finite number $n_g$ of generator vectors $\mathbf{s}_{i1}, \dots, \mathbf{s}_{i n_g}$. A force $\mathbf{f}$ lying inside the approximate cone at contact $i$ we can write explicitly as: 
+\paragraph{Generators of a polyhedral cone.}
+Any polyhedral cone can be represented as the set of all nonnegative linear
+combinations of a finite number $n_g$ of generator vectors
+$\mathbf{s}_{i1}, \dots, \mathbf{s}_{i n_g}$. A force $\mathbf{f}$ lying
+inside the approximate cone at contact $i$ can be written explicitly as
 \begin{equation}
     \mathbf{f} = \sum_{k=1}^{n_g} \sigma_k \, \mathbf{s}_{ik}, \qquad \sigma_k \ge 0 ,
     \label{eq:generator-combination}
 \end{equation}
-where each $\sigma_k$ is a nonnegative generator weight. Geometrically, the $n_g$ generators are the edges of a pyramid inscribed in (or circumscribing) the true circular friction cone; increasing $n_g$ improves the approximation.
+where each $\sigma_k$ is a nonnegative generator weight. Geometrically, the
+$n_g$ generators are the edges of a pyramid inscribed in (or circumscribing)
+the true circular friction cone; increasing $n_g$ improves the
+approximation.
 
-Equation~\eqref{eq:generator-combination} can be written compactly for the full set of contact forces $\boldsymbol{\lambda}_i$ transmitted at contact $i$ as
+Equation~\eqref{eq:generator-combination} can be written compactly for the
+full set of contact forces $\boldsymbol{\lambda}_i$ transmitted at contact
+$i$ as
 \begin{equation}
     G_i \boldsymbol{\lambda}_i = S_i \boldsymbol{\sigma}_i, \qquad \boldsymbol{\sigma}_i \ge 0 ,
     \label{eq:generator-matrix-form}
 \end{equation}
-where $S_i = (\mathbf{s}_{i1} \; \cdots \; \mathbf{s}_{i n_g})$ collects the generators as columns, and $\boldsymbol{\sigma}_i \ge 0$ is a vector of nonnegative weights. For a frictionless point contact (PwoF), $n_g = 1$ and $S_i$ reduces to the single contact normal direction.
+where $S_i = (\mathbf{s}_{i1} \; \cdots \; \mathbf{s}_{i n_g})$ collects the
+generators as columns, and $\boldsymbol{\sigma}_i \ge 0$ is a vector of
+nonnegative weights. For a frictionless point contact (PwoF), $n_g = 1$ and
+$S_i$ reduces to the single contact normal direction.
+% TODO: in the planar HF case the wedge (eq:friction-cone) is exactly
+% represented by n_g = 2 generators, n_i +/- mu_i t_i -- state this.
 
-\subsection{Generators for the Hard-Finger (HF) Model}
-
-For a Hard Finger contact, the friction cone is approximated by the nonnegative span of $n_g$ uniformly spaced contact-force generators, giving an inscribed regular polyhedral cone (Fig.~\ref{fig:polyhedral-cone}). The generator matrix is
+\paragraph{Generators for the hard-finger (HF) model.}
+For a hard-finger contact, the friction cone is approximated by the
+nonnegative span of $n_g$ uniformly spaced contact-force generators, giving
+an inscribed regular polyhedral cone (\cref{fig:polyhedral-cone}). The
+generator matrix is
 \begin{equation}
     S_i =
     \begin{pmatrix}
@@ -120,7 +452,12 @@ For a Hard Finger contact, the friction cone is approximated by the nonnegative 
     \end{pmatrix}, \qquad k = 1, \dots, n_g .
     \label{eq:Si-HF}
 \end{equation}
-The top row fixes a unit normal component for every generator, while the remaining two rows place the $n_g$ generators evenly around a circle of radius $\mu_i$ in the tangential $(f_{it}, f_{io})$-plane. If a \emph{circumscribing} polyhedral cone is preferred instead of an inscribed one, $\mu_i$ in \eqref{eq:Si-HF} is simply replaced by $\mu_i / \cos(\pi/n_g)$.
+The top row fixes a unit normal component for every generator, while the
+remaining two rows place the $n_g$ generators evenly around a circle of
+radius $\mu_i$ in the tangential $(f_{it}, f_{io})$-plane. If a
+\emph{circumscribing} polyhedral cone is preferred instead of an inscribed
+one, $\mu_i$ in \eqref{eq:Si-HF} is simply replaced by
+$\mu_i / \cos(\pi/n_g)$.
 
 \begin{figure}[htbp]
     \centering
@@ -131,13 +468,15 @@ The top row fixes a unit normal component for every generator, while the remaini
     \label{fig:polyhedral-cone}
 \end{figure}
 
-\subsection{Generators for the Soft-Finger (SF) Model}
-
-For a Soft Finger contact, the torsional friction component is decoupled from the tangential components, so each generator is extended to four dimensions:
+\paragraph{Generators for the soft-finger (SF) model.}
+For a soft-finger contact, the torsional friction component is decoupled
+from the tangential components, so each generator is extended to four
+dimensions:
 \begin{equation}
     \mathbf{s}_{ik} = \begin{pmatrix} 1 & 0 & 0 & \pm b \upsilon_i \end{pmatrix}^\top ,
 \end{equation}
-where $b$ is a characteristic length used to keep units consistent between force and torsional-moment components. Collecting these generators gives
+where $b$ is a characteristic length used to keep units consistent between
+force and torsional-moment components. Collecting these generators gives
 \begin{equation}
     S_i =
     \begin{pmatrix}
@@ -148,26 +487,310 @@ where $b$ is a characteristic length used to keep units consistent between force
     \end{pmatrix}.
     \label{eq:Si-SF}
 \end{equation}
+% NOTE: SF = HF in the plane (Sec. Contact and Friction Model), so this
+% paragraph can probably be cut or shortened to one sentence.
 
-\subsection{Assembling the Full Grasp}
-
-The set of all contact wrenches that the hand can apply without violating the friction law at any contact is written as
+\paragraph{Assembling the full grasp.}
+The set of all contact wrenches that the hand can apply without violating
+the friction law at any contact is written as
 \begin{equation}
     G \boldsymbol{\lambda} = S \boldsymbol{\sigma}, \qquad \boldsymbol{\sigma} \ge 0 ,
 \end{equation}
-where $S = (S_1, \dots, S_{n_c})$ stacks the per-contact generator matrices and $\boldsymbol{\sigma} = (\boldsymbol{\sigma}_1^\top, \dots, \boldsymbol{\sigma}_{n_c}^\top)^\top$ collects all generator weights, with $n_c$ the number of contacts.
+where $S = (S_1, \dots, S_{n_c})$ stacks the per-contact generator matrices
+and $\boldsymbol{\sigma} = (\boldsymbol{\sigma}_1^\top, \dots,
+\boldsymbol{\sigma}_{n_c}^\top)^\top$ collects all generator weights, with
+$n_c$ the number of contacts.
 
-\subsection{Dual (Face-Normal) Form}
-
-It is often convenient to reformulate the friction constraint in dual form, using the \emph{face normals} of the polyhedral cone rather than its generators:
+\paragraph{Dual (face-normal) form.}
+It is often convenient to reformulate the friction constraint in dual form,
+using the \emph{face normals} of the polyhedral cone rather than its
+generators:
 \begin{equation}
     F_i \boldsymbol{\lambda}_i \ge 0 ,
     \label{eq:face-normal-form}
 \end{equation}
-where each row of $F_i$ is normal to a face formed by two adjacent generators of the approximate cone. For an HF contact, row $i$ of $F_i$ can be computed directly as the cross product of consecutive generators, $\mathbf{s}_{ik} \times \mathbf{s}_{i,k+1}$. For an SF contact the generators are four-dimensional, so simple cross products no longer suffice, and a general generator-to-face-normal conversion method must be used instead.
+where each row of $F_i$ is normal to a face formed by two adjacent generators
+of the approximate cone. For an HF contact, row $k$ of $F_i$ can be computed
+directly as the cross product of consecutive generators,
+$\mathbf{s}_{ik} \times \mathbf{s}_{i,k+1}$. For an SF contact the generators
+are four-dimensional, so simple cross products no longer suffice, and a
+general generator-to-face-normal conversion method must be used instead.
 
-Combining the per-contact constraints \eqref{eq:face-normal-form} over all $n_c$ contacts gives the compact form
+Combining the per-contact constraints \eqref{eq:face-normal-form} over all
+$n_c$ contacts gives the compact form
 \begin{equation}
     F \boldsymbol{\lambda} \ge 0 , \qquad F = \operatorname{Blockdiag}(F_1, \dots, F_{n_c}) .
     \label{eq:face-normal-full}
 \end{equation}
+
+% ==================================================================
+\section{Force Closure}
+\label{sec:force-closure}
+% ==================================================================
+
+% [Moved from theory.tex, section "Force Closure: Formal Definition"
+%  (first paragraph). Informal note -- rewrite as prose.]
+\textcolor{red}{Claude: Most sources use ``force closure'' for a contact-only
+property, which is exactly the Handbook's frictional form closure
+(Def.~28.9). Only a smaller group, including the Handbook's own Def.~28.10,
+makes force closure depend on the robot's actuators. The Handbook itself says
+Def.~28.9 is what Murray et al.\ call force closure.}
+
+% [Moved from margin_force_closure.tex, subsection "Wrench Space and
+%  Force Closure" (definition of the wrench space). Contact force
+%  vector renamed c -> lambda to match the rest of the chapter.]
+The set of all wrenches the contact configuration can actually produce, once
+the friction cone constraints~\eqref{eq:friction-cone} are imposed on
+$\boldsymbol{\lambda}$, is the \emph{wrench space} (or wrench cone) of the
+grasp:
+\begin{equation}
+    \mathcal{W} = \left\{\, \boldsymbol{G}\boldsymbol{\lambda} \ \middle|\ \boldsymbol{\lambda}_i \in \mathcal{F}_i \text{ for all } i \,\right\} \subset \mathbb{R}^3.
+    \label{eq:wrench-space}
+\end{equation}
+Because the friction-cone constraints are conic (positively homogeneous),
+$\mathcal{W}$ is a convex cone spanned by the primitive wrenches, obtained as
+the Minkowski sum of the (linearized) friction cones mapped through
+$\boldsymbol{G}$.
+
+% [Moved from background.tex, subsection "Relation to the Force-Closure
+%  Test". Stray markdown ``` fences removed (they broke compilation);
+%  the boxed lambda -> w summaries at the end were duplicates and are in
+%  removed_duplicates.tex.]
+The approximate force-closure test used in this work consists of three
+stages \cite[Sec.~28.4.2]{prattichizzo2008grasping}:
+\begin{enumerate}
+    \item \textbf{Rank of the grasp matrix:}
+    \begin{equation}
+        \operatorname{rank}(\boldsymbol{G})=n_{\nu}.
+    \end{equation}
+    This determines whether the contacts can generate all required wrench
+    directions (\cref{sec:nullspace-cases}).
+
+    \item \textbf{Frictional form closure:}
+    LP2 determines whether there exists a contact-force configuration that
+    produces no net wrench while remaining strictly inside the friction
+    constraints. A positive optimal value, $d^*>0$, indicates frictional form
+    closure (\cref{sec:lp2}).
+
+    \item \textbf{Control of internal forces:}
+    LP3 examines whether an internal force exists that is also uncontrollable
+    according to the robot's Jacobian. If $d^*>0$, such an internal force
+    exists and force closure does not hold. If $d^*=0$, the required
+    force-closure condition is satisfied, assuming the previous conditions
+    have been fulfilled (\cref{sec:lp3}).
+\end{enumerate}
+
+% ------------------------------------------------------------------
+\subsection{Nullspace Cases for the Grasp Matrix and Hand Jacobian}
+\label{sec:nullspace-cases}
+
+% [Moved from background.tex, subsection "Wrench Directions". Changed:
+%  planar case (n_nu = 3) stated explicitly.]
+\paragraph{Rank of $\boldsymbol{G}$ and wrench directions.}
+A wrench direction represents a possible direction in the object's wrench
+space. In three-dimensional space, a wrench has six independent components:
+three translational force components and three rotational torque
+components; in the plane it has three, $(f_x, f_y, \tau)$. Examples of
+wrench directions include:
+\begin{itemize}
+    \item a force in the positive $x$-direction,
+    \item a force in the negative $y$-direction,
+    \item a torque about the $z$-axis, or
+    \item a combination of forces and torques.
+\end{itemize}
+Thus, the wrench space can be viewed as the space containing all possible
+combinations of forces and torques acting on the object.
+
+For a grasp to have the ability to resist arbitrary external disturbances,
+the contacts must be capable of generating wrenches in all relevant
+directions. This is examined through the rank of the grasp matrix,
+\begin{equation}
+    \operatorname{rank}(\boldsymbol{G}) = n_{\nu},
+    \label{eq:rank-condition}
+\end{equation}
+where $n_{\nu}$ denotes the dimension of the object's wrench space
+($n_\nu = 6$ in three dimensions, $n_\nu = 3$ in the plane). If the rank is
+smaller than $n_{\nu}$, there exists at least one wrench direction that
+cannot be generated by the contact forces. Consequently, the contacts cannot
+provide force closure. The rank condition can therefore be interpreted as:
+\emph{can the contact forces generate wrenches in every required direction
+of the object's wrench space?}
+
+% [Moved from background.tex, subsection "Internal Forces"; merged with
+%  the Handbook p. 678 paragraph on internal forces from theory.tex,
+%  section "Contact and Friction Model".]
+\paragraph{Internal forces, $\mathcal{N}(\boldsymbol{G})$.}
+Not all contact forces necessarily result in a net wrench on the object.
+Some combinations of contact forces cancel each other such that
+\begin{equation}
+    \boldsymbol{G}\boldsymbol{\lambda} = \mathbf{0}.
+    \label{eq:internal-force}
+\end{equation}
+Such force combinations are referred to as \textit{internal forces}. They
+produce no net force or torque on the object, but they can still generate
+significant forces at the individual contacts. For example, consider a robot
+squeezing an object from two opposite sides, $\mathbf{F}_1 = -\mathbf{F}_2$.
+The two forces cancel with respect to the object, $\mathbf{F}_1+\mathbf{F}_2
+= \mathbf{0}$, and assuming that their moments also cancel, the
+corresponding contact-force vector satisfies~\eqref{eq:internal-force}. The
+object therefore experiences no net wrench, even though the robot is applying
+forces at the contacts.
+
+The set of all contact-force vectors that produce no net wrench is the
+nullspace of the grasp matrix:
+\begin{equation}
+    \mathcal{N}(\boldsymbol{G})
+    = \left\{
+    \boldsymbol{\lambda}
+    \mid
+    \boldsymbol{G}\boldsymbol{\lambda}=\mathbf{0}
+    \right\}.
+\end{equation}
+These wrench intensities do not contribute to the acceleration of the
+object; instead, they affect the tightness of the grasp. Internal forces
+therefore play a fundamental role in maintaining grasps that rely on
+friction \cite[p.~678]{prattichizzo2008grasping}: they can increase the
+normal forces at the contacts and thereby increase the available frictional
+forces without directly accelerating the object.
+
+% [Moved from theory.tex, section "Nullspace cases for G and J"
+%  (notes -- expand into prose).]
+\paragraph{Grasp classes.}
+From the Handbook of Robotics \cite{prattichizzo2008grasping}:
+\textbf{graspable, indeterminate, defective, redundant, hyperstatic}.
+\textcolor{red}{``Because the snake's base is unactuated and unsupported, its
+Jacobian contains $\boldsymbol{G}$ as the base block, and the hand-grasp
+distinction between defective and hyperstatic grasps collapses: a contact
+force that loads no joint and no base coordinate is necessarily internal.''}
+% TODO: one short paragraph per class, with the nullspace that defines it:
+%   graspable N(G), indeterminate N(G^T), redundant N(J),
+%   defective N(J^T), hyperstatic N(G) cap N(J^T).
+
+% ------------------------------------------------------------------
+\subsection{Frictional Form Closure}
+\label{sec:frictional-form-closure}
+
+% [Moved from theory.tex, section "Force Closure: Formal Definition"
+%  (second paragraph, first half).]
+Def.~28.9 in \cite{prattichizzo2008grasping} requires
+$\operatorname{rank}\boldsymbol{G} = n_\nu$ and a squeeze
+$\boldsymbol{\lambda} \in \operatorname{Int}(\mathcal{F})$ with
+$\boldsymbol{G}\boldsymbol{\lambda} = \mathbf{0}$ (contacts and friction
+only).
+
+\subsubsection{LP2}
+\label{sec:lp2}
+
+% [Merged from two places:
+%  - margin_force_closure.tex, subsection "LP2" (first sentences);
+%  - implementation.tex, section "Algorithm" (LP formulation and the
+%    explanation of d and of the normalization).
+%  The implementation.tex version of the LP is kept because its sign
+%  convention (F lambda >= 1 d) matches the face-normal form
+%  eq:face-normal-full. The margin-chapter version (F c <= -1 d, with
+%  variable c) is in removed_duplicates.tex.]
+Following the frictional form-closure test of
+\cite[Sec.~28.4.2]{prattichizzo2008grasping}, the friction cone at each
+contact is linearized into the half-space constraints
+$F\boldsymbol{\lambda} \ge \mathbf{0}$ of~\eqref{eq:face-normal-full}.
+Frictional form closure --- i.e.\ $\mathbf{0} \in
+\operatorname{int}(\mathcal{W})$ --- is then tested constructively by
+searching for a nonzero $\boldsymbol{\lambda}$ that produces zero net wrench
+while sitting strictly inside every friction cone, via the linear program
+\begin{equation}
+\begin{aligned}
+    \underset{\boldsymbol{\lambda},d}{\operatorname{maximize}}
+    \quad & d \\[2mm]
+    \text{subject to}
+    \quad & \boldsymbol{G}\boldsymbol{\lambda} = \boldsymbol{0},\\
+    & F\boldsymbol{\lambda} - \boldsymbol{1}d \geq \boldsymbol{0},\\
+    & d \geq 0,\\
+    & \boldsymbol{e}^{T}\boldsymbol{\lambda} \leq n_c.
+\end{aligned}
+\label{eq:lp2}
+\end{equation}
+
+Here, $\boldsymbol{1}$ is a vector of ones with the same number of rows as
+$F$. The equilibrium constraint $\boldsymbol{G}\boldsymbol{\lambda}=\boldsymbol{0}$
+ensures that the contact forces produce zero resultant wrench. Consequently,
+the solution represents an internal force distribution that is in
+equilibrium.
+
+The inequality $F\boldsymbol{\lambda} - \boldsymbol{1}d \geq \boldsymbol{0}$
+can equivalently be written component-wise as
+\begin{equation}
+    d \leq (F\boldsymbol{\lambda})_k,
+    \qquad
+    k=1,\ldots,m,
+\end{equation}
+where $m$ is the number of rows of $F$. Thus, $d$ is a lower bound on all
+contact-constraint margins. Maximizing $d$ therefore maximizes the minimum
+margin over all constraints.
+
+A normalization constraint is required because the equilibrium and contact
+constraints are homogeneous in $\boldsymbol{\lambda}$. Without such a
+constraint, any feasible force distribution could be multiplied by an
+arbitrary positive scalar, causing $d$ to increase without bound. The
+normalization $\boldsymbol{e}^{T}\boldsymbol{\lambda} \leq n_c$ fixes the
+scale of the force distribution. For the ordering in~\eqref{eq:lambda-stacked},
+the vector $\boldsymbol{e}$ is constructed such that
+\begin{equation}
+    \boldsymbol{e}^{T}\boldsymbol{\lambda}
+    =
+    \sum_{i=1}^{n_c} f_{ni}.
+\end{equation}
+
+The optimal value $d^\star$ of~\eqref{eq:lp2} is zero when frictional form
+closure does not hold, and strictly positive when it does
+($\mathbf{0} \in \operatorname{int}(\mathcal{W})$). How $d^\star$ can be used
+as a margin is discussed in \cref{chap:margin}.
+
+% ------------------------------------------------------------------
+\subsection{Force Closure}
+\label{sec:force-closure-def}
+
+% [Moved from theory.tex, section "Force Closure: Formal Definition"
+%  (second paragraph, second half). The intersection symbol was missing
+%  in the original.]
+Def.~28.10 in \cite{prattichizzo2008grasping} adds
+$\mathcal{N}(\boldsymbol{G}) \cap \mathcal{N}(\boldsymbol{J}^\top) = \{\mathbf{0}\}$,
+meaning the hand's joints can control every squeeze.
+
+% [Moved from background.tex, subsection "Internal Forces and Force
+%  Closure". CHANGED: J -> J^T in the nullspace condition and in LP3, to
+%  match Def. 28.10 above (the original used N(J) and J lambda = 0, which
+%  is dimensionally inconsistent with lambda). Check against the
+%  Handbook.]
+The existence of internal forces is not, by itself, a problem. In fact,
+internal forces are often necessary to maintain a stable grasp. The relevant
+question is whether the internal forces can be appropriately controlled by
+the robot. This distinction appears in the force-closure analysis through
+the condition
+\begin{equation}
+    \mathcal{N}(\boldsymbol{G})\cap\mathcal{N}(\boldsymbol{J}^\top)=\{\mathbf{0}\},
+    \label{eq:fc-nullspace-condition}
+\end{equation}
+where $\boldsymbol{J}$ is the hand Jacobian (\cref{sec:hand-jacobian}). The
+condition states that there should be no non-zero internal force that
+simultaneously belongs to the nullspace of both $\boldsymbol{G}$ and
+$\boldsymbol{J}^\top$. Such a force would produce no wrench on the object
+while also being uncontrollable through the robot's actuation.
+
+\subsubsection{LP3}
+\label{sec:lp3}
+
+This is the purpose of the third step of the approximate force-closure
+test. LP3 searches for such a problematic contact-force vector by imposing
+\begin{equation}
+    \boldsymbol{G}\boldsymbol{\lambda}=\mathbf{0}
+    \qquad \text{and} \qquad
+    \boldsymbol{J}^\top\boldsymbol{\lambda}=\mathbf{0}.
+\end{equation}
+If LP3 finds a strictly feasible solution with $d^*>0$, an admissible
+non-zero internal force exists in this intersection, and force closure does
+not exist. Conversely, if $d^*=0$, no such strictly feasible uncontrollable
+internal force is found, satisfying the final condition for force closure
+when the preceding tests have also been passed.
+
+\todo[inline]{Write out LP3 in full, in the same form as~\eqref{eq:lp2}
+(Handbook Sec.~28.4.2).}
