@@ -1,46 +1,23 @@
 \chapter{A Margin for Force Closure}
 \label{chap:margin}
-
-% STRUCTURE (restructured 2026-09-30):
-%   Requirements, Candidate Margins.
-% Moved OUT of this chapter:
-%  - "Wrench Space and Force Closure" -> theory.tex (planar friction
-%    cone -> Sec. Coulomb Friction Cone; primitive wrenches -> Sec.
-%    Grasp Matrix; wrench space W -> intro of Sec. Force Closure).
-%  - "LP2" formulation -> theory.tex, Sec. Frictional Form Closure / LP2.
-%  - "Properties of the snake robot" -> theory.tex, Sec. Planar Snake
-%    Robot Model.
-% Removed (empty, not in the new outline):
-%  - "Properties of the Margin", "Using the Margin in Path Planning".
-%    Their intended content is kept in the TODO list below.
-%
-% Original chapter TODO list (kept for reference):
-%  - Motivate why a binary force-closure test is insufficient for
-%    path planning (no notion of "how robust" a configuration is).
-%  - Survey candidate margin/quality metrics from the grasping
-%    literature (e.g. largest inscribed ball in the wrench space,
-%    minimum singular value formulations, etc.) and state your
-%    selection criteria (computational cost, differentiability,
-%    physical interpretability, suitability as a planning cost).
-%  - Derive/define your chosen force closure margin precisely:
-%    inputs, formula, units, bounds, degenerate cases.
-%  - Prove or argue its key properties (continuity, monotonicity
-%    with respect to contact quality, behaviour at the force
-%    closure boundary, computational complexity).
-%    [was section "Properties of the Margin"]
-%  - Discuss how the margin will be consumed by a path planner
-%    (e.g. as a cost term, as a constraint, as a heuristic).
-%    [was section "Using the Margin in Path Planning"]
+A potential margin is one that sets up a
 
 \section{Requirements}
 \label{sec:margin-requirements}
+\begin{itemize}
+    \item \textbf{Existence and uniqueness}: every configuration gets exactly one well-defined value.
+    \item \textbf{Metric-like}: it works like a score, so configurations can be compared and ranked.
+    \item \textbf{Continuous and smooth}: needed for optimization and path planning.
+    \item \textbf{Negative, zero, positive}: $M<0$ not held, $M=0$ on the edge, $M>0$ frictional form closure and potentially form closure.
+    \item \textbf{Prefer form closure, accept frictional form closure}: Frictional from closure only configurations score $d^*_\mu$, form closure adds $\kappa*d^*_0$ on top, continuously.
+\end{itemize}
 
 % [Was "Requirements for a Path-Planning-Ready Metric" -- empty.]
 % TODO: selection criteria (see TODO list above).
 
-\section{Candidate Margins}
+\section{Candidate Margin}
 \label{sec:candidate-margins}
-
+Will be based on LP1 and LP2, while LP3 has to be a separate test.
 % [Original notes from section "Candidate Metrics", kept as-is.]
 Potential: \textbf{[The-Synthesis-of-Stable-Force-Closure-Grasps]}
 

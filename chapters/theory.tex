@@ -291,6 +291,115 @@ kinematics $\boldsymbol{J}\dot{\boldsymbol{q}}=\boldsymbol{G}^\top\boldsymbol{\n
 statics $\boldsymbol{\tau}=\boldsymbol{J}^\top\boldsymbol{\lambda}$; for the
 floating-base snake $\boldsymbol{J}_{\mathrm{snk}}=[\boldsymbol{G}^\top\ |\ \boldsymbol{J}_\phi]$.}
 
+The generalized coordinates give the position and heading of the snake head, and also all joint angels, With that can find every angel of the links relative to the heading of the snake head:
+% ---------- Generalised coordinates ----------
+\begin{equation}
+  \mathbf q = \begin{bmatrix} x_h & y_h & \theta_h & \phi_1 & \cdots & \phi_{N-1} \end{bmatrix}^\mathsf{T},
+  \qquad \theta_{j} = \theta_{j+1} - \phi_j
+  \label{eq:gen-coords}
+\end{equation}
+Further can calculate the every link directions:
+% ---------- Link directions ----------
+\begin{equation}
+  \mathbf u_j = \begin{bmatrix} \cos\theta_j \\ \sin\theta_j \end{bmatrix},
+  \qquad
+  \mathbf u_j^{\perp} = \frac{\partial \mathbf u_j}{\partial \theta_j}
+  = \begin{bmatrix} -\sin\theta_j \\ \cos\theta_j \end{bmatrix}
+  \label{eq:link-dir}
+\end{equation}
+Want the contact velocities to be given in the direction of their respective normal and tangent force direction:
+% ---------- Contact frame ----------
+\begin{equation}
+  \hat{\mathbf t}_i = \begin{bmatrix} -\hat n_{i,y} \\ \hat n_{i,x} \end{bmatrix},
+  \qquad
+  R_i = \begin{bmatrix} \hat{\mathbf n}_i & \hat{\mathbf t}_i \end{bmatrix}
+  \label{eq:contact-frame}
+\end{equation}
+
+Calculate the contact point velocities and utilizing the planar cross product. Given the velocities in x and y direction: 
+% ---------- Contact-point velocity (rigid motion + joints) ----------
+\begin{equation}
+  \dot{\mathbf c}_i
+  = \dot{\mathbf r}_h
+  + \dot\theta_h\, \hat{\mathbf z} \times (\mathbf c_i - \mathbf r_h)
+  - \sum_{j \,\in\, \mathcal J_i} \dot\phi_j\, \hat{\mathbf z} \times (\mathbf c_i - \boldsymbol\zeta_j)
+  \qquad
+  \hat{\mathbf z} \times \mathbf a = \begin{bmatrix} -a_y \\ a_x \end{bmatrix}
+  \label{eq:contact-vel}
+\end{equation}
+% J_i: joints between contact i and the head; zeta_j: position of joint j
+
+Can rewrite the contact point velocities with a derivative matrix subject to the generalised coordintaes:
+% ---------- Positional Jacobian ----------
+\begin{equation}
+  \dot{\mathbf c}_i = A_i(\mathbf q)\,\dot{\mathbf q},
+  \qquad
+  A_i = \frac{\partial \mathbf c_i}{\partial \mathbf q} \in \mathbb R^{2\times(N+2)}
+  \label{eq:pos-jac}
+\end{equation}
+
+Do the final rotation to get the contact velocities in normal and tangent force directions:
+% ---------- Resolution in the contact frame ----------
+\begin{equation}
+  \begin{bmatrix} v_{n,i} \\ v_{t,i} \end{bmatrix}
+  = \begin{bmatrix} \hat{\mathbf n}_i^\mathsf{T} \\ \hat{\mathbf t}_i^\mathsf{T} \end{bmatrix} \dot{\mathbf c}_i
+  = R_i^\mathsf{T} A_i\, \dot{\mathbf q}
+  = J_i\, \dot{\mathbf q}
+  \label{eq:contact-frame-vel}
+\end{equation}
+ 
+% ---------- Stacked contact Jacobian ----------
+\begin{equation}
+  \boldsymbol\nu_c =
+  \begin{bmatrix} v_{n,1} & v_{t,1} & \cdots & v_{n,n_c} & v_{t,n_c} \end{bmatrix}^\mathsf{T}
+  = J_{snk}\, \dot{\mathbf q},
+  \qquad
+  J_{snk} = \begin{bmatrix} J_1 \\ \vdots \\ J_{n_c} \end{bmatrix} \in \mathbb R^{2n_c \times (N+2)}
+  \label{eq:Jsnk}
+\end{equation}
+ 
+% ---------- Entries of J_snk ----------
+\begin{equation}
+  J_i =
+  \begin{bmatrix}
+    \hat n_{i,x} & \hat n_{i,y} & (\mathbf c_i - \mathbf r_h)\times\hat{\mathbf n}_i & \cdots & -\delta_{ij}\,(\mathbf c_i - \boldsymbol\zeta_j)\times\hat{\mathbf n}_i & \cdots \\[2pt]
+    \hat t_{i,x} & \hat t_{i,y} & (\mathbf c_i - \mathbf r_h)\times\hat{\mathbf t}_i & \cdots & -\delta_{ij}\,(\mathbf c_i - \boldsymbol\zeta_j)\times\hat{\mathbf t}_i & \cdots
+  \end{bmatrix},
+  \qquad
+  \delta_{ij} =
+  \begin{cases}
+    1 & j \in \mathcal J_i \\
+    0 & \text{otherwise}
+  \end{cases}
+  \label{eq:Ji-entries}
+\end{equation}
+ 
+
+% ---------- Decomposition ----------
+\begin{equation}
+  J_{snk} = \begin{bmatrix} G^\mathsf{T} & J_\phi \end{bmatrix},
+  \qquad
+  J_\phi = \frac{\partial \boldsymbol\nu_c}{\partial \dot{\boldsymbol\phi}} \in \mathbb R^{2n_c \times (N-1)}
+  \label{eq:Jsnk-split}
+\end{equation}
+ 
+% ---------- Kinematics and statics ----------
+\begin{equation}
+  \boldsymbol\nu_c = G^\mathsf{T}
+  \begin{bmatrix} \dot x_h \\ \dot y_h \\ \dot\theta_h \end{bmatrix}
+  + J_\phi\, \dot{\boldsymbol\phi}
+  \label{eq:kinematics}
+\end{equation}
+ 
+\begin{equation}
+  J_{snk}^\mathsf{T}\boldsymbol\lambda =
+  \begin{bmatrix} G\boldsymbol\lambda \\ J_\phi^\mathsf{T}\boldsymbol\lambda \end{bmatrix}
+  = \begin{bmatrix} \mathbf w_{ext} \\ \boldsymbol\tau_\phi \end{bmatrix},
+  \qquad
+  \boldsymbol\lambda = \begin{bmatrix} f_{n,1} & f_{t,1} & \cdots & f_{n,n_c} & f_{t,n_c} \end{bmatrix}^\mathsf{T}
+  \label{eq:statics}
+\end{equation}
+
 % ------------------------------------------------------------------
 % [Moved from theory.tex, section "Contact and Friction Model".
 %  NOTE: the HF/SF paragraphs are close to verbatim from the Handbook
@@ -776,6 +885,7 @@ simultaneously belongs to the nullspace of both $\boldsymbol{G}$ and
 $\boldsymbol{J}^\top$. Such a force would produce no wrench on the object
 while also being uncontrollable through the robot's actuation.
 
+For N link snake it has 3 balance equations and N-1 motor equations. With frictional contact points there are $2n_c$ unknows. If $2n_c > N+2$, some force combinations are always left out.
 \subsubsection{LP3}
 \label{sec:lp3}
 
@@ -794,3 +904,5 @@ when the preceding tests have also been passed.
 
 \todo[inline]{Write out LP3 in full, in the same form as~\eqref{eq:lp2}
 (Handbook Sec.~28.4.2).}
+
+\subsection{Wrench space}
