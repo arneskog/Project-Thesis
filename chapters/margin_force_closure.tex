@@ -18,6 +18,19 @@ A potential margin is one that sets up a
 \section{Candidate Margin}
 \label{sec:candidate-margins}
 Will be based on LP1 and LP2, while LP3 has to be a separate test.
+
+% [Added 2026-10-28: wrench-space margins from the literature.]
+The standard wrench-space quality measure is the $\epsilon$-metric of
+Ferrari and Canny~\cite{ferrari1992planning}: the radius of the largest
+ball centred at the origin that fits inside the convex hull of the
+primitive contact wrenches. It is zero whenever the grasp is not in
+closure. Zhu, Ding and Tso~\cite{zhu2004pseudodistance} define a
+pseudodistance based on the gauge function of a convex set, which measures
+the clearance between two convex sets when they are separate and the
+penetration depth when they intersect. Applied in wrench space, it gives a
+signed distance from the origin to the grasp wrench set, computable as a
+linear program for convex polyhedra.
+
 % [Original notes from section "Candidate Metrics", kept as-is.]
 Potential: \textbf{[The-Synthesis-of-Stable-Force-Closure-Grasps]}
 
